@@ -1,3 +1,4 @@
+
 import math
 
 def twos_compliment(high_byte, low_byte):
@@ -53,7 +54,7 @@ class MPU6050(object):
     K = 0.98
     K1 = 1 - K
 
-    def __init__(self, i2c, address, fs_scale=FS_250, afs_scale=AFS_2g):
+    def __init__(self, i2c, address=0x68, fs_scale=FS_250, afs_scale=AFS_2g):
         
         self.i2c = i2c
         self.address = address
@@ -87,19 +88,19 @@ class MPU6050(object):
         self.roll = 0.0
         
         # We need to wake up the module as it start in sleep mode
-        self.i2c.write_byte(self.i2c, self.address, MPU6050.PWR_MGMT_1, 0)
+        self.i2c.write8(self.address, MPU6050.PWR_MGMT_1, 0)
         # Set the gryo resolution
-        self.i2c.write_byte(self.i2c, self.address, MPU6050.FS_SEL, self.fs_scale << 3)
+        self.i2c.write8(self.address, MPU6050.FS_SEL, self.fs_scale << 3)
         # Set the accelerometer resolution
-        self.i2c.write_byte(self.i2c, self.address, MPU6050.AFS_SEL, self.afs_scale << 3)
+        self.i2c.write8(self.address, MPU6050.AFS_SEL, self.afs_scale << 3)
            
     def read_raw_data(self):
         '''
         Read the raw data from the sensor, scale it appropriately and store for later use
         '''
-        self.raw_gyro_data = self.i2c.read_block(self.i2c, self.address, MPU6050.GYRO_START_BLOCK, 6)
-        self.raw_accel_data = self.i2c.read_block(self.i2c, self.address, MPU6050.ACCEL_START_BLOCK, 6)
-        self.raw_temp_data = self.i2c.read_block(self.i2c, self.address, MPU6050.TEMP_START_BLOCK, 2)
+        self.raw_gyro_data = self.i2c.read_block(self.address, MPU6050.GYRO_START_BLOCK, 6)
+        self.raw_accel_data = self.i2c.read_block(self.address, MPU6050.ACCEL_START_BLOCK, 6)
+        self.raw_temp_data = self.i2c.read_block(self.address, MPU6050.TEMP_START_BLOCK, 2)
         
         self.gyro_raw_x = twos_compliment(self.raw_gyro_data[MPU6050.GYRO_XOUT_H], self.raw_gyro_data[MPU6050.GYRO_XOUT_L])
         self.gyro_raw_y = twos_compliment(self.raw_gyro_data[MPU6050.GYRO_YOUT_H], self.raw_gyro_data[MPU6050.GYRO_YOUT_L])
@@ -122,8 +123,8 @@ class MPU6050(object):
         self.accel_scaled_y = self.accel_raw_y / MPU6050.ACCEL_SCALE[self.afs_scale][1]
         self.accel_scaled_z = self.accel_raw_z / MPU6050.ACCEL_SCALE[self.afs_scale][1]
         
-        self.pitch = self.read_x_rotation(self.read_scaled_accel_x(),self.read_scaled_accel_y(),self.read_scaled_accel_z())
-        self.roll =  self.read_y_rotation(self.read_scaled_accel_x(),self.read_scaled_accel_y(),self.read_scaled_accel_z())
+        self.pitch = self.read_x_rotation(self.accel_scaled_x,self.accel_scaled_y,self.accel_scaled_z)
+        self.roll =  self.read_y_rotation(self.accel_scaled_x,self.accel_scaled_y,self.accel_scaled_z)
         
     def read_x_rotation(self, x, y, z):
         '''Returns the rotation around the X axis in radians'''
@@ -140,7 +141,8 @@ class MPU6050(object):
 
 if __name__=='__main__':
 
-    import sys
+    import sys,time
+
     sys.path.append('..')
 
     from bus import I2C
@@ -150,6 +152,6 @@ if __name__=='__main__':
     #sensor.initialize()
     
     while(True):
-        print sensor.read_all()
+        print sensor.read_all()[:2]
         #print "Temperature(C): %.6f" % (baro.temp), "Pressure(millibar): %.6f" % (baro.press)
         time.sleep(0.1)
