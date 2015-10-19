@@ -71,8 +71,8 @@ class MS5611 :
 		self.D1 = 0
 		self.D2 = 0
                 
-		self.temperature = 0.0 # Calculated temperature
-		self.pressure = 0.0 # Calculated Pressure
+		self.temp = 0.0 # Calculated temperature
+		self.press = 0.0 # Calculated Pressure
 
 	def initialize(self):
 		## The MS6511 Sensor stores 6 values in the EPROM memory that we need in order to calculate the actual temperature and pressure
@@ -134,8 +134,8 @@ class MS5611 :
 		SENS = SENS - SENS2
 		PRES = (self.D1 * SENS / 2**21 - OFF) / 2**15
 
-                self.temperature  =  TEMP / 100 # Temperature updated
-                self.pressure = PRES / 100 # Pressure updated
+                self.temp  =  TEMP / 100 # Temperature updated
+                self.press = PRES / 100 # Pressure updated
                 
 	def update(self):
 		self.refreshPressure()
@@ -147,3 +147,22 @@ class MS5611 :
 		self.readTemperature()
 
 		self.calculatePressureAndTemperature()
+
+if __name__=='__main__':
+    
+    import sys	
+    sys.path.append('..')
+
+    from bus import I2C
+
+    i2c = I2C(1)
+    baro = MS5611(i2c)
+    baro.initialize()
+
+    while(True):
+        baro.update()
+        baro.calculatePressureAndTemperature()
+
+        print "Temperature(C): %.6f" % (baro.temp), "Pressure(millibar): %.6f" % (baro.press)
+
+        time.sleep(0.5)

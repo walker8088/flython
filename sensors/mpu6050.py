@@ -1723,3 +1723,22 @@ class MPU6050:
         # Resetting FIFO and clearing INT status one last time
         self.resetFIFO()
         self.getIntStatus()
+
+if __name__=='__main__':
+
+    import sys
+    sys.path.append('..')
+
+    from bus import I2C
+
+    i2c = I2C(1)
+    sensor = MPU6050(i2c)
+    sensor.initialize()
+    print sensor.testConnection()
+
+    while(True):
+        sensor.update()
+
+        #print "Temperature(C): %.6f" % (baro.temp), "Pressure(millibar): %.6f" % (baro.press)
+
+        time.sleep(0.5)

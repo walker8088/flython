@@ -27,7 +27,7 @@ class I2C:
         return data
     
     def writeBit(self, addr, reg, bitNum, data):
-        b = self.readU8(reg)
+        b = self.readU8(addr, reg)
         
         if data != 0:
             b = (b | (1 << bitNum))
@@ -59,7 +59,7 @@ class I2C:
         # 10100011 original & ~mask
         # 10101011 masked | value
         
-        b = self.readU8(reg)
+        b = self.readU8(addr, reg)
         mask = ((1 << length) - 1) << (bitStart - length + 1)
         data <<= (bitStart - length + 1)
         data &= mask
