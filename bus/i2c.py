@@ -50,7 +50,6 @@ class I2C:
         
         return b
         
-    
     def writeBits(self, addr, reg, bitStart, length, data):
         #      010 value to write
         # 76543210 bit numbers
@@ -101,59 +100,48 @@ class I2C:
     
     def writeList(self, addr, reg, list):
         # Writes an array of bytes using I2C format"
-        try:
-            self.bus.write_i2c_block_data(addr, reg, list)
-        except (IOError):
-            print ("Error accessing 0x%02X: Check your I2C address" % addr)
-        return -1    
-    
+        self.bus.write_i2c_block_data(addr, reg, list)
+        
     def write8(self, addr, reg, value):
         # Writes an 8-bit value to the specified register/address
-        try:
-            self.bus.write_byte_data(addr, reg, value)
-        except (IOError):
-            print ("Error accessing 0x%02X: Check your I2C address" % addr)
-            return -1
-
+        self.bus.write_byte_data(addr, reg, value)
+        
     def readU8(self, addr, reg):
-        # Read an unsigned byte from the I2C device
-        try:
+            # Read an unsigned byte from the I2C device
             result = self.bus.read_byte_data(addr, reg)
             return result
-        except (IOError):
-            print ("Error accessing 0x%02X: Check your I2C address" % addr)
-            return -1
-
+        
     def readS8(self, addr, reg):
-        # Reads a signed byte from the I2C device
-        try:
+            # Reads a signed byte from the I2C device
             result = self.bus.read_byte_data(addr, reg)
             if result > 127:
                 return result - 256
             else:
                 return result
-        except (IOError):
-            print ("Error accessing 0x%02X: Check your I2C address" % addr)
-            return -1
-
+        
     def readU16(self, addr, reg):
-        # Reads an unsigned 16-bit value from the I2C device
-        try:
+            # Reads an unsigned 16-bit value from the I2C device
             hibyte = self.bus.read_byte_data(addr, reg)
             result = (hibyte << 8) + self.bus.read_byte_data(addr, reg + 1)
             return result
-        except (IOError):
-            print ("Error accessing 0x%02X: Check your I2C address" % addr)
-            return -1
-
+        
     def readS16(self, addr, reg):
-        # Reads a signed 16-bit value from the I2C device
-        try:
+            # Reads a signed 16-bit value from the I2C device
             hibyte = self.bus.read_byte_data(addr, reg)
             if hibyte > 127:
                 hibyte -= 256
             result = (hibyte << 8) + self.bus.read_byte_data(addr, reg + 1)
             return result
-        except (IOError):
-            print ("Error accessing 0x%02X: Check your I2C address" % addr)
-            return -1
+        
+    def read_byte(self, addr):
+            return self.bus.read_byte(addr)
+     
+    def write_byte(self, addr, data):
+            return self.bus.write_byte(addr, data)
+                   
+    def read_block(self, addr, reg):
+            return self.bus.read_i2c_block_data(addr, reg)
+     
+    def write_block(self, addr, reg, data):
+            return self.bus.write_i2c_block_data(addr, reg, data)
+                   

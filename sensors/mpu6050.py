@@ -1,381 +1,376 @@
-#!/usr/bin/python
 
-# Python Standard Library Imports
 from time import sleep
 from math import atan, atan2, sqrt
 
-# External Imports
+# Register map based on Jeff Rowberg <jeff@rowberg.net> source code at
+# https://github.com/jrowberg/i2cdevlib/blob/master/Arduino/MPU6050/MPU6050.h
 
-# Custom Imports
+MPU6050_ADDRESS_AD0_LOW       = 0x68 # address pin low (GND), default for InvenSense evaluation board
+MPU6050_ADDRESS_AD0_HIGH      = 0x69 # address pin high (VCC)
+MPU6050_DEFAULT_ADDRESS       = MPU6050_ADDRESS_AD0_LOW
+
+MPU6050_RA_XG_OFFS_TC         = 0x00 # [7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
+MPU6050_RA_YG_OFFS_TC         = 0x01 # [7] PWR_MODE, [6:1] YG_OFFS_TC, [0] OTP_BNK_VLD
+MPU6050_RA_ZG_OFFS_TC         = 0x02 # [7] PWR_MODE, [6:1] ZG_OFFS_TC, [0] OTP_BNK_VLD
+MPU6050_RA_X_FINE_GAIN        = 0x03 # [7:0] X_FINE_GAIN
+MPU6050_RA_Y_FINE_GAIN        = 0x04 # [7:0] Y_FINE_GAIN
+MPU6050_RA_Z_FINE_GAIN        = 0x05 # [7:0] Z_FINE_GAIN
+MPU6050_RA_XA_OFFS_H          = 0x06 # [15:0] XA_OFFS
+MPU6050_RA_XA_OFFS_L_TC       = 0x07
+MPU6050_RA_YA_OFFS_H          = 0x08 # [15:0] YA_OFFS
+MPU6050_RA_YA_OFFS_L_TC       = 0x09
+MPU6050_RA_ZA_OFFS_H          = 0x0A # [15:0] ZA_OFFS
+MPU6050_RA_ZA_OFFS_L_TC       = 0x0B
+MPU6050_RA_XG_OFFS_USRH       = 0x13 # [15:0] XG_OFFS_USR
+MPU6050_RA_XG_OFFS_USRL       = 0x14
+MPU6050_RA_YG_OFFS_USRH       = 0x15 # [15:0] YG_OFFS_USR
+MPU6050_RA_YG_OFFS_USRL       = 0x16
+MPU6050_RA_ZG_OFFS_USRH       = 0x17 # [15:0] ZG_OFFS_USR
+MPU6050_RA_ZG_OFFS_USRL       = 0x18
+MPU6050_RA_SMPLRT_DIV         = 0x19
+MPU6050_RA_CONFIG             = 0x1A
+MPU6050_RA_GYRO_CONFIG        = 0x1B
+MPU6050_RA_ACCEL_CONFIG       = 0x1C
+MPU6050_RA_FF_THR             = 0x1D
+MPU6050_RA_FF_DUR             = 0x1E
+MPU6050_RA_MOT_THR            = 0x1F
+MPU6050_RA_MOT_DUR            = 0x20
+MPU6050_RA_ZRMOT_THR          = 0x21
+MPU6050_RA_ZRMOT_DUR          = 0x22
+MPU6050_RA_FIFO_EN            = 0x23
+MPU6050_RA_I2C_MST_CTRL       = 0x24
+MPU6050_RA_I2C_SLV0_ADDR      = 0x25
+MPU6050_RA_I2C_SLV0_REG       = 0x26
+MPU6050_RA_I2C_SLV0_CTRL      = 0x27
+MPU6050_RA_I2C_SLV1_ADDR      = 0x28
+MPU6050_RA_I2C_SLV1_REG       = 0x29
+MPU6050_RA_I2C_SLV1_CTRL      = 0x2A
+MPU6050_RA_I2C_SLV2_ADDR      = 0x2B
+MPU6050_RA_I2C_SLV2_REG       = 0x2C
+MPU6050_RA_I2C_SLV2_CTRL      = 0x2D
+MPU6050_RA_I2C_SLV3_ADDR      = 0x2E
+MPU6050_RA_I2C_SLV3_REG       = 0x2F
+MPU6050_RA_I2C_SLV3_CTRL      = 0x30
+MPU6050_RA_I2C_SLV4_ADDR      = 0x31
+MPU6050_RA_I2C_SLV4_REG       = 0x32
+MPU6050_RA_I2C_SLV4_DO        = 0x33
+MPU6050_RA_I2C_SLV4_CTRL      = 0x34
+MPU6050_RA_I2C_SLV4_DI        = 0x35
+MPU6050_RA_I2C_MST_STATUS     = 0x36
+MPU6050_RA_INT_PIN_CFG        = 0x37
+MPU6050_RA_INT_ENABLE         = 0x38
+MPU6050_RA_DMP_INT_STATUS     = 0x39
+MPU6050_RA_INT_STATUS         = 0x3A
+MPU6050_RA_ACCEL_XOUT_H       = 0x3B
+MPU6050_RA_ACCEL_XOUT_L       = 0x3C
+MPU6050_RA_ACCEL_YOUT_H       = 0x3D
+MPU6050_RA_ACCEL_YOUT_L       = 0x3E
+MPU6050_RA_ACCEL_ZOUT_H       = 0x3F
+MPU6050_RA_ACCEL_ZOUT_L       = 0x40
+MPU6050_RA_TEMP_OUT_H         = 0x41
+MPU6050_RA_TEMP_OUT_L         = 0x42
+MPU6050_RA_GYRO_XOUT_H        = 0x43
+MPU6050_RA_GYRO_XOUT_L        = 0x44
+MPU6050_RA_GYRO_YOUT_H        = 0x45
+MPU6050_RA_GYRO_YOUT_L        = 0x46
+MPU6050_RA_GYRO_ZOUT_H        = 0x47
+MPU6050_RA_GYRO_ZOUT_L        = 0x48
+MPU6050_RA_EXT_SENS_DATA_00   = 0x49
+MPU6050_RA_EXT_SENS_DATA_01   = 0x4A
+MPU6050_RA_EXT_SENS_DATA_02   = 0x4B
+MPU6050_RA_EXT_SENS_DATA_03   = 0x4C
+MPU6050_RA_EXT_SENS_DATA_04   = 0x4D
+MPU6050_RA_EXT_SENS_DATA_05   = 0x4E
+MPU6050_RA_EXT_SENS_DATA_06   = 0x4F
+MPU6050_RA_EXT_SENS_DATA_07   = 0x50
+MPU6050_RA_EXT_SENS_DATA_08   = 0x51
+MPU6050_RA_EXT_SENS_DATA_09   = 0x52
+MPU6050_RA_EXT_SENS_DATA_10   = 0x53
+MPU6050_RA_EXT_SENS_DATA_11   = 0x54
+MPU6050_RA_EXT_SENS_DATA_12   = 0x55
+MPU6050_RA_EXT_SENS_DATA_13   = 0x56
+MPU6050_RA_EXT_SENS_DATA_14   = 0x57
+MPU6050_RA_EXT_SENS_DATA_15   = 0x58
+MPU6050_RA_EXT_SENS_DATA_16   = 0x59
+MPU6050_RA_EXT_SENS_DATA_17   = 0x5A
+MPU6050_RA_EXT_SENS_DATA_18   = 0x5B
+MPU6050_RA_EXT_SENS_DATA_19   = 0x5C
+MPU6050_RA_EXT_SENS_DATA_20   = 0x5D
+MPU6050_RA_EXT_SENS_DATA_21   = 0x5E
+MPU6050_RA_EXT_SENS_DATA_22   = 0x5F
+MPU6050_RA_EXT_SENS_DATA_23   = 0x60
+MPU6050_RA_MOT_DETECT_STATUS  = 0x61
+MPU6050_RA_I2C_SLV0_DO        = 0x63
+MPU6050_RA_I2C_SLV1_DO        = 0x64
+MPU6050_RA_I2C_SLV2_DO        = 0x65
+MPU6050_RA_I2C_SLV3_DO        = 0x66
+MPU6050_RA_I2C_MST_DELAY_CTRL = 0x67
+MPU6050_RA_SIGNAL_PATH_RESET  = 0x68
+MPU6050_RA_MOT_DETECT_CTRL    = 0x69
+MPU6050_RA_USER_CTRL          = 0x6A
+MPU6050_RA_PWR_MGMT_1         = 0x6B
+MPU6050_RA_PWR_MGMT_2         = 0x6C
+MPU6050_RA_BANK_SEL           = 0x6D
+MPU6050_RA_MEM_START_ADDR     = 0x6E
+MPU6050_RA_MEM_R_W            = 0x6F
+MPU6050_RA_DMP_CFG_1          = 0x70
+MPU6050_RA_DMP_CFG_2          = 0x71
+MPU6050_RA_FIFO_COUNTH        = 0x72
+MPU6050_RA_FIFO_COUNTL        = 0x73
+MPU6050_RA_FIFO_R_W           = 0x74
+MPU6050_RA_WHO_AM_I           = 0x75  
+
+MPU6050_TC_PWR_MODE_BIT    = 7
+MPU6050_TC_OFFSET_BIT      = 6
+MPU6050_TC_OFFSET_LENGTH   = 6
+MPU6050_TC_OTP_BNK_VLD_BIT = 0
+
+MPU6050_VDDIO_LEVEL_VLOGIC  = 0
+MPU6050_VDDIO_LEVEL_VDD     = 1    
+
+MPU6050_CFG_EXT_SYNC_SET_BIT    = 5
+MPU6050_CFG_EXT_SYNC_SET_LENGTH = 3
+MPU6050_CFG_DLPF_CFG_BIT    = 2
+MPU6050_CFG_DLPF_CFG_LENGTH = 3
+
+MPU6050_EXT_SYNC_DISABLED      = 0x0
+MPU6050_EXT_SYNC_TEMP_OUT_L    = 0x1
+MPU6050_EXT_SYNC_GYRO_XOUT_L   = 0x2
+MPU6050_EXT_SYNC_GYRO_YOUT_L   = 0x3
+MPU6050_EXT_SYNC_GYRO_ZOUT_L   = 0x4
+MPU6050_EXT_SYNC_ACCEL_XOUT_L  = 0x5
+MPU6050_EXT_SYNC_ACCEL_YOUT_L  = 0x6
+MPU6050_EXT_SYNC_ACCEL_ZOUT_L  = 0x7
+
+MPU6050_DLPF_BW_256        = 0x00
+MPU6050_DLPF_BW_188        = 0x01
+MPU6050_DLPF_BW_98         = 0x02
+MPU6050_DLPF_BW_42         = 0x03
+MPU6050_DLPF_BW_20         = 0x04
+MPU6050_DLPF_BW_10         = 0x05
+MPU6050_DLPF_BW_5          = 0x06
+
+MPU6050_GCONFIG_FS_SEL_BIT     = 4
+MPU6050_GCONFIG_FS_SEL_LENGTH  = 2
+
+MPU6050_GYRO_FS_250        = 0x00
+MPU6050_GYRO_FS_500        = 0x01
+MPU6050_GYRO_FS_1000       = 0x02
+MPU6050_GYRO_FS_2000       = 0x03
+
+MPU6050_ACONFIG_XA_ST_BIT         =  7
+MPU6050_ACONFIG_YA_ST_BIT         =  6
+MPU6050_ACONFIG_ZA_ST_BIT         =  5
+MPU6050_ACONFIG_AFS_SEL_BIT       =  4
+MPU6050_ACONFIG_AFS_SEL_LENGTH    =  2
+MPU6050_ACONFIG_ACCEL_HPF_BIT     =  2
+MPU6050_ACONFIG_ACCEL_HPF_LENGTH  =  3
+
+MPU6050_ACCEL_FS_2         = 0x00
+MPU6050_ACCEL_FS_4         = 0x01
+MPU6050_ACCEL_FS_8         = 0x02
+MPU6050_ACCEL_FS_16        = 0x03
+
+MPU6050_DHPF_RESET         = 0x00
+MPU6050_DHPF_5             = 0x01
+MPU6050_DHPF_2P5           = 0x02
+MPU6050_DHPF_1P25          = 0x03
+MPU6050_DHPF_0P63          = 0x04
+MPU6050_DHPF_HOLD          = 0x07
+
+MPU6050_TEMP_FIFO_EN_BIT   = 7
+MPU6050_XG_FIFO_EN_BIT     = 6
+MPU6050_YG_FIFO_EN_BIT     = 5
+MPU6050_ZG_FIFO_EN_BIT     = 4
+MPU6050_ACCEL_FIFO_EN_BIT  = 3
+MPU6050_SLV2_FIFO_EN_BIT   = 2
+MPU6050_SLV1_FIFO_EN_BIT   = 1
+MPU6050_SLV0_FIFO_EN_BIT   = 0
+
+MPU6050_MULT_MST_EN_BIT    = 7
+MPU6050_WAIT_FOR_ES_BIT    = 6
+MPU6050_SLV_3_FIFO_EN_BIT  = 5
+MPU6050_I2C_MST_P_NSR_BIT  = 4
+MPU6050_I2C_MST_CLK_BIT    = 3
+MPU6050_I2C_MST_CLK_LENGTH = 4
+
+MPU6050_CLOCK_DIV_348      = 0x0
+MPU6050_CLOCK_DIV_333      = 0x1
+MPU6050_CLOCK_DIV_320      = 0x2
+MPU6050_CLOCK_DIV_308      = 0x3
+MPU6050_CLOCK_DIV_296      = 0x4
+MPU6050_CLOCK_DIV_286      = 0x5
+MPU6050_CLOCK_DIV_276      = 0x6
+MPU6050_CLOCK_DIV_267      = 0x7
+MPU6050_CLOCK_DIV_258      = 0x8
+MPU6050_CLOCK_DIV_500      = 0x9
+MPU6050_CLOCK_DIV_471      = 0xA
+MPU6050_CLOCK_DIV_444      = 0xB
+MPU6050_CLOCK_DIV_421      = 0xC
+MPU6050_CLOCK_DIV_400      = 0xD
+MPU6050_CLOCK_DIV_381      = 0xE
+MPU6050_CLOCK_DIV_364      = 0xF
+
+MPU6050_I2C_SLV_RW_BIT     = 7
+MPU6050_I2C_SLV_ADDR_BIT   = 6
+MPU6050_I2C_SLV_ADDR_LENGTH = 7
+MPU6050_I2C_SLV_EN_BIT      = 7
+MPU6050_I2C_SLV_BYTE_SW_BIT = 6
+MPU6050_I2C_SLV_REG_DIS_BIT = 5
+MPU6050_I2C_SLV_GRP_BIT     = 4
+MPU6050_I2C_SLV_LEN_BIT     = 3
+MPU6050_I2C_SLV_LEN_LENGTH  = 4
+
+MPU6050_I2C_SLV4_RW_BIT        = 7
+MPU6050_I2C_SLV4_ADDR_BIT      = 6
+MPU6050_I2C_SLV4_ADDR_LENGTH   = 7
+MPU6050_I2C_SLV4_EN_BIT        = 7
+MPU6050_I2C_SLV4_INT_EN_BIT    = 6
+MPU6050_I2C_SLV4_REG_DIS_BIT   = 5
+MPU6050_I2C_SLV4_MST_DLY_BIT   = 4
+MPU6050_I2C_SLV4_MST_DLY_LENGTH = 5
+
+MPU6050_MST_PASS_THROUGH_BIT   = 7
+MPU6050_MST_I2C_SLV4_DONE_BIT  = 6
+MPU6050_MST_I2C_LOST_ARB_BIT   = 5
+MPU6050_MST_I2C_SLV4_NACK_BIT  = 4
+MPU6050_MST_I2C_SLV3_NACK_BIT  = 3
+MPU6050_MST_I2C_SLV2_NACK_BIT  = 2
+MPU6050_MST_I2C_SLV1_NACK_BIT  = 1
+MPU6050_MST_I2C_SLV0_NACK_BIT  = 0
+
+MPU6050_INTCFG_INT_LEVEL_BIT       = 7
+MPU6050_INTCFG_INT_OPEN_BIT        = 6
+MPU6050_INTCFG_LATCH_INT_EN_BIT    = 5
+MPU6050_INTCFG_INT_RD_CLEAR_BIT    = 4
+MPU6050_INTCFG_FSYNC_INT_LEVEL_BIT = 3
+MPU6050_INTCFG_FSYNC_INT_EN_BIT    = 2
+MPU6050_INTCFG_I2C_BYPASS_EN_BIT   = 1
+MPU6050_INTCFG_CLKOUT_EN_BIT       = 0
+
+MPU6050_INTMODE_ACTIVEHIGH = 0x00
+MPU6050_INTMODE_ACTIVELOW  = 0x01
+
+MPU6050_INTDRV_PUSHPULL    = 0x00
+MPU6050_INTDRV_OPENDRAIN   = 0x01
+
+MPU6050_INTLATCH_50USPULSE = 0x00
+MPU6050_INTLATCH_WAITCLEAR = 0x01
+
+MPU6050_INTCLEAR_STATUSREAD = 0x00
+MPU6050_INTCLEAR_ANYREAD    = 0x01
+
+MPU6050_INTERRUPT_FF_BIT           = 7
+MPU6050_INTERRUPT_MOT_BIT          = 6
+MPU6050_INTERRUPT_ZMOT_BIT         = 5
+MPU6050_INTERRUPT_FIFO_OFLOW_BIT   = 4
+MPU6050_INTERRUPT_I2C_MST_INT_BIT  = 3
+MPU6050_INTERRUPT_PLL_RDY_INT_BIT  = 2
+MPU6050_INTERRUPT_DMP_INT_BIT      = 1
+MPU6050_INTERRUPT_DATA_RDY_BIT     = 0
+
+# TODO: figure out what these actually do
+# UMPL source code is not very obivous
+MPU6050_DMPINT_5_BIT           = 5
+MPU6050_DMPINT_4_BIT           = 4
+MPU6050_DMPINT_3_BIT           = 3
+MPU6050_DMPINT_2_BIT           = 2
+MPU6050_DMPINT_1_BIT           = 1
+MPU6050_DMPINT_0_BIT           = 0
+
+MPU6050_MOTION_MOT_XNEG_BIT    = 7
+MPU6050_MOTION_MOT_XPOS_BIT    = 6
+MPU6050_MOTION_MOT_YNEG_BIT    = 5
+MPU6050_MOTION_MOT_YPOS_BIT    = 4
+MPU6050_MOTION_MOT_ZNEG_BIT    = 3
+MPU6050_MOTION_MOT_ZPOS_BIT    = 2
+MPU6050_MOTION_MOT_ZRMOT_BIT   = 0
+
+MPU6050_DELAYCTRL_DELAY_ES_SHADOW_BIT  = 7
+MPU6050_DELAYCTRL_I2C_SLV4_DLY_EN_BIT  = 4
+MPU6050_DELAYCTRL_I2C_SLV3_DLY_EN_BIT  = 3
+MPU6050_DELAYCTRL_I2C_SLV2_DLY_EN_BIT  = 2
+MPU6050_DELAYCTRL_I2C_SLV1_DLY_EN_BIT  = 1
+MPU6050_DELAYCTRL_I2C_SLV0_DLY_EN_BIT  = 0
+
+MPU6050_PATHRESET_GYRO_RESET_BIT   = 2
+MPU6050_PATHRESET_ACCEL_RESET_BIT  = 1
+MPU6050_PATHRESET_TEMP_RESET_BIT   = 0
+
+MPU6050_DETECT_ACCEL_ON_DELAY_BIT     = 5
+MPU6050_DETECT_ACCEL_ON_DELAY_LENGTH  = 2
+MPU6050_DETECT_FF_COUNT_BIT           = 3
+MPU6050_DETECT_FF_COUNT_LENGTH        = 2
+MPU6050_DETECT_MOT_COUNT_BIT          = 1
+MPU6050_DETECT_MOT_COUNT_LENGTH       = 2
+
+MPU6050_DETECT_DECREMENT_RESET = 0x0
+MPU6050_DETECT_DECREMENT_1     = 0x1
+MPU6050_DETECT_DECREMENT_2     = 0x2
+MPU6050_DETECT_DECREMENT_4     = 0x3
+
+MPU6050_USERCTRL_DMP_EN_BIT            = 7
+MPU6050_USERCTRL_FIFO_EN_BIT           = 6
+MPU6050_USERCTRL_I2C_MST_EN_BIT        = 5
+MPU6050_USERCTRL_I2C_IF_DIS_BIT        = 4
+MPU6050_USERCTRL_DMP_RESET_BIT         = 3
+MPU6050_USERCTRL_FIFO_RESET_BIT        = 2
+MPU6050_USERCTRL_I2C_MST_RESET_BIT     = 1
+MPU6050_USERCTRL_SIG_COND_RESET_BIT    = 0
+
+MPU6050_PWR1_DEVICE_RESET_BIT  = 7
+MPU6050_PWR1_SLEEP_BIT         = 6
+MPU6050_PWR1_CYCLE_BIT         = 5
+MPU6050_PWR1_TEMP_DIS_BIT      = 3
+MPU6050_PWR1_CLKSEL_BIT        = 2
+MPU6050_PWR1_CLKSEL_LENGTH     = 3
+
+MPU6050_CLOCK_INTERNAL        =  0x00
+MPU6050_CLOCK_PLL_XGYRO       =  0x01
+MPU6050_CLOCK_PLL_YGYRO       =  0x02
+MPU6050_CLOCK_PLL_ZGYRO       =  0x03
+MPU6050_CLOCK_PLL_EXT32K      =  0x04
+MPU6050_CLOCK_PLL_EXT19M      =  0x05
+MPU6050_CLOCK_KEEP_RESET      =  0x07
+
+MPU6050_PWR2_LP_WAKE_CTRL_BIT     = 7
+MPU6050_PWR2_LP_WAKE_CTRL_LENGTH  = 2
+MPU6050_PWR2_STBY_XA_BIT          = 5
+MPU6050_PWR2_STBY_YA_BIT          = 4
+MPU6050_PWR2_STBY_ZA_BIT          = 3
+MPU6050_PWR2_STBY_XG_BIT          = 2
+MPU6050_PWR2_STBY_YG_BIT          = 1
+MPU6050_PWR2_STBY_ZG_BIT          = 0
+
+MPU6050_WAKE_FREQ_1P25     = 0x0
+MPU6050_WAKE_FREQ_2P5      = 0x1
+MPU6050_WAKE_FREQ_5        = 0x2
+MPU6050_WAKE_FREQ_10       = 0x3
+
+MPU6050_BANKSEL_PRFTCH_EN_BIT      = 6
+MPU6050_BANKSEL_CFG_USER_BANK_BIT  = 5
+MPU6050_BANKSEL_MEM_SEL_BIT        = 4
+MPU6050_BANKSEL_MEM_SEL_LENGTH     = 5
+
+MPU6050_BANKSEL_PRFTCH_EN_BIT = 6
+MPU6050_BANKSEL_CFG_USER_BANK_BIT = 5
+MPU6050_BANKSEL_MEM_SEL_BIT   = 4
+MPU6050_BANKSEL_MEM_SEL_LENGTH = 5    
+
+MPU6050_WHO_AM_I_BIT          = 6
+MPU6050_WHO_AM_I_LENGTH       = 6    
+
+# DMP
+
+MPU6050_DMP_MEMORY_BANKS      = 8
+MPU6050_DMP_MEMORY_BANK_SIZE  = 256
+MPU6050_DMP_MEMORY_CHUNK_SIZE = 16
+
+MPU6050_DMP_CODE_SIZE         = 1929    # dmpMemory[]
+MPU6050_DMP_CONFIG_SIZE       = 192     # dmpConfig[]
+MPU6050_DMP_UPDATES_SIZE      = 47      # dmpUpdates[]
 
 class MPU6050:
-    # Register map based on Jeff Rowberg <jeff@rowberg.net> source code at
-    # https://github.com/jrowberg/i2cdevlib/blob/master/Arduino/MPU6050/MPU6050.h
-    
-    MPU6050_ADDRESS_AD0_LOW       = 0x68 # address pin low (GND), default for InvenSense evaluation board
-    MPU6050_ADDRESS_AD0_HIGH      = 0x69 # address pin high (VCC)
-    MPU6050_DEFAULT_ADDRESS       = MPU6050_ADDRESS_AD0_LOW
-
-    MPU6050_RA_XG_OFFS_TC         = 0x00 # [7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
-    MPU6050_RA_YG_OFFS_TC         = 0x01 # [7] PWR_MODE, [6:1] YG_OFFS_TC, [0] OTP_BNK_VLD
-    MPU6050_RA_ZG_OFFS_TC         = 0x02 # [7] PWR_MODE, [6:1] ZG_OFFS_TC, [0] OTP_BNK_VLD
-    MPU6050_RA_X_FINE_GAIN        = 0x03 # [7:0] X_FINE_GAIN
-    MPU6050_RA_Y_FINE_GAIN        = 0x04 # [7:0] Y_FINE_GAIN
-    MPU6050_RA_Z_FINE_GAIN        = 0x05 # [7:0] Z_FINE_GAIN
-    MPU6050_RA_XA_OFFS_H          = 0x06 # [15:0] XA_OFFS
-    MPU6050_RA_XA_OFFS_L_TC       = 0x07
-    MPU6050_RA_YA_OFFS_H          = 0x08 # [15:0] YA_OFFS
-    MPU6050_RA_YA_OFFS_L_TC       = 0x09
-    MPU6050_RA_ZA_OFFS_H          = 0x0A # [15:0] ZA_OFFS
-    MPU6050_RA_ZA_OFFS_L_TC       = 0x0B
-    MPU6050_RA_XG_OFFS_USRH       = 0x13 # [15:0] XG_OFFS_USR
-    MPU6050_RA_XG_OFFS_USRL       = 0x14
-    MPU6050_RA_YG_OFFS_USRH       = 0x15 # [15:0] YG_OFFS_USR
-    MPU6050_RA_YG_OFFS_USRL       = 0x16
-    MPU6050_RA_ZG_OFFS_USRH       = 0x17 # [15:0] ZG_OFFS_USR
-    MPU6050_RA_ZG_OFFS_USRL       = 0x18
-    MPU6050_RA_SMPLRT_DIV         = 0x19
-    MPU6050_RA_CONFIG             = 0x1A
-    MPU6050_RA_GYRO_CONFIG        = 0x1B
-    MPU6050_RA_ACCEL_CONFIG       = 0x1C
-    MPU6050_RA_FF_THR             = 0x1D
-    MPU6050_RA_FF_DUR             = 0x1E
-    MPU6050_RA_MOT_THR            = 0x1F
-    MPU6050_RA_MOT_DUR            = 0x20
-    MPU6050_RA_ZRMOT_THR          = 0x21
-    MPU6050_RA_ZRMOT_DUR          = 0x22
-    MPU6050_RA_FIFO_EN            = 0x23
-    MPU6050_RA_I2C_MST_CTRL       = 0x24
-    MPU6050_RA_I2C_SLV0_ADDR      = 0x25
-    MPU6050_RA_I2C_SLV0_REG       = 0x26
-    MPU6050_RA_I2C_SLV0_CTRL      = 0x27
-    MPU6050_RA_I2C_SLV1_ADDR      = 0x28
-    MPU6050_RA_I2C_SLV1_REG       = 0x29
-    MPU6050_RA_I2C_SLV1_CTRL      = 0x2A
-    MPU6050_RA_I2C_SLV2_ADDR      = 0x2B
-    MPU6050_RA_I2C_SLV2_REG       = 0x2C
-    MPU6050_RA_I2C_SLV2_CTRL      = 0x2D
-    MPU6050_RA_I2C_SLV3_ADDR      = 0x2E
-    MPU6050_RA_I2C_SLV3_REG       = 0x2F
-    MPU6050_RA_I2C_SLV3_CTRL      = 0x30
-    MPU6050_RA_I2C_SLV4_ADDR      = 0x31
-    MPU6050_RA_I2C_SLV4_REG       = 0x32
-    MPU6050_RA_I2C_SLV4_DO        = 0x33
-    MPU6050_RA_I2C_SLV4_CTRL      = 0x34
-    MPU6050_RA_I2C_SLV4_DI        = 0x35
-    MPU6050_RA_I2C_MST_STATUS     = 0x36
-    MPU6050_RA_INT_PIN_CFG        = 0x37
-    MPU6050_RA_INT_ENABLE         = 0x38
-    MPU6050_RA_DMP_INT_STATUS     = 0x39
-    MPU6050_RA_INT_STATUS         = 0x3A
-    MPU6050_RA_ACCEL_XOUT_H       = 0x3B
-    MPU6050_RA_ACCEL_XOUT_L       = 0x3C
-    MPU6050_RA_ACCEL_YOUT_H       = 0x3D
-    MPU6050_RA_ACCEL_YOUT_L       = 0x3E
-    MPU6050_RA_ACCEL_ZOUT_H       = 0x3F
-    MPU6050_RA_ACCEL_ZOUT_L       = 0x40
-    MPU6050_RA_TEMP_OUT_H         = 0x41
-    MPU6050_RA_TEMP_OUT_L         = 0x42
-    MPU6050_RA_GYRO_XOUT_H        = 0x43
-    MPU6050_RA_GYRO_XOUT_L        = 0x44
-    MPU6050_RA_GYRO_YOUT_H        = 0x45
-    MPU6050_RA_GYRO_YOUT_L        = 0x46
-    MPU6050_RA_GYRO_ZOUT_H        = 0x47
-    MPU6050_RA_GYRO_ZOUT_L        = 0x48
-    MPU6050_RA_EXT_SENS_DATA_00   = 0x49
-    MPU6050_RA_EXT_SENS_DATA_01   = 0x4A
-    MPU6050_RA_EXT_SENS_DATA_02   = 0x4B
-    MPU6050_RA_EXT_SENS_DATA_03   = 0x4C
-    MPU6050_RA_EXT_SENS_DATA_04   = 0x4D
-    MPU6050_RA_EXT_SENS_DATA_05   = 0x4E
-    MPU6050_RA_EXT_SENS_DATA_06   = 0x4F
-    MPU6050_RA_EXT_SENS_DATA_07   = 0x50
-    MPU6050_RA_EXT_SENS_DATA_08   = 0x51
-    MPU6050_RA_EXT_SENS_DATA_09   = 0x52
-    MPU6050_RA_EXT_SENS_DATA_10   = 0x53
-    MPU6050_RA_EXT_SENS_DATA_11   = 0x54
-    MPU6050_RA_EXT_SENS_DATA_12   = 0x55
-    MPU6050_RA_EXT_SENS_DATA_13   = 0x56
-    MPU6050_RA_EXT_SENS_DATA_14   = 0x57
-    MPU6050_RA_EXT_SENS_DATA_15   = 0x58
-    MPU6050_RA_EXT_SENS_DATA_16   = 0x59
-    MPU6050_RA_EXT_SENS_DATA_17   = 0x5A
-    MPU6050_RA_EXT_SENS_DATA_18   = 0x5B
-    MPU6050_RA_EXT_SENS_DATA_19   = 0x5C
-    MPU6050_RA_EXT_SENS_DATA_20   = 0x5D
-    MPU6050_RA_EXT_SENS_DATA_21   = 0x5E
-    MPU6050_RA_EXT_SENS_DATA_22   = 0x5F
-    MPU6050_RA_EXT_SENS_DATA_23   = 0x60
-    MPU6050_RA_MOT_DETECT_STATUS  = 0x61
-    MPU6050_RA_I2C_SLV0_DO        = 0x63
-    MPU6050_RA_I2C_SLV1_DO        = 0x64
-    MPU6050_RA_I2C_SLV2_DO        = 0x65
-    MPU6050_RA_I2C_SLV3_DO        = 0x66
-    MPU6050_RA_I2C_MST_DELAY_CTRL = 0x67
-    MPU6050_RA_SIGNAL_PATH_RESET  = 0x68
-    MPU6050_RA_MOT_DETECT_CTRL    = 0x69
-    MPU6050_RA_USER_CTRL          = 0x6A
-    MPU6050_RA_PWR_MGMT_1         = 0x6B
-    MPU6050_RA_PWR_MGMT_2         = 0x6C
-    MPU6050_RA_BANK_SEL           = 0x6D
-    MPU6050_RA_MEM_START_ADDR     = 0x6E
-    MPU6050_RA_MEM_R_W            = 0x6F
-    MPU6050_RA_DMP_CFG_1          = 0x70
-    MPU6050_RA_DMP_CFG_2          = 0x71
-    MPU6050_RA_FIFO_COUNTH        = 0x72
-    MPU6050_RA_FIFO_COUNTL        = 0x73
-    MPU6050_RA_FIFO_R_W           = 0x74
-    MPU6050_RA_WHO_AM_I           = 0x75  
-
-    MPU6050_TC_PWR_MODE_BIT    = 7
-    MPU6050_TC_OFFSET_BIT      = 6
-    MPU6050_TC_OFFSET_LENGTH   = 6
-    MPU6050_TC_OTP_BNK_VLD_BIT = 0
-
-    MPU6050_VDDIO_LEVEL_VLOGIC  = 0
-    MPU6050_VDDIO_LEVEL_VDD     = 1    
-
-    MPU6050_CFG_EXT_SYNC_SET_BIT    = 5
-    MPU6050_CFG_EXT_SYNC_SET_LENGTH = 3
-    MPU6050_CFG_DLPF_CFG_BIT    = 2
-    MPU6050_CFG_DLPF_CFG_LENGTH = 3
-
-    MPU6050_EXT_SYNC_DISABLED      = 0x0
-    MPU6050_EXT_SYNC_TEMP_OUT_L    = 0x1
-    MPU6050_EXT_SYNC_GYRO_XOUT_L   = 0x2
-    MPU6050_EXT_SYNC_GYRO_YOUT_L   = 0x3
-    MPU6050_EXT_SYNC_GYRO_ZOUT_L   = 0x4
-    MPU6050_EXT_SYNC_ACCEL_XOUT_L  = 0x5
-    MPU6050_EXT_SYNC_ACCEL_YOUT_L  = 0x6
-    MPU6050_EXT_SYNC_ACCEL_ZOUT_L  = 0x7
-
-    MPU6050_DLPF_BW_256        = 0x00
-    MPU6050_DLPF_BW_188        = 0x01
-    MPU6050_DLPF_BW_98         = 0x02
-    MPU6050_DLPF_BW_42         = 0x03
-    MPU6050_DLPF_BW_20         = 0x04
-    MPU6050_DLPF_BW_10         = 0x05
-    MPU6050_DLPF_BW_5          = 0x06
-
-    MPU6050_GCONFIG_FS_SEL_BIT     = 4
-    MPU6050_GCONFIG_FS_SEL_LENGTH  = 2
-
-    MPU6050_GYRO_FS_250        = 0x00
-    MPU6050_GYRO_FS_500        = 0x01
-    MPU6050_GYRO_FS_1000       = 0x02
-    MPU6050_GYRO_FS_2000       = 0x03
-
-    MPU6050_ACONFIG_XA_ST_BIT         =  7
-    MPU6050_ACONFIG_YA_ST_BIT         =  6
-    MPU6050_ACONFIG_ZA_ST_BIT         =  5
-    MPU6050_ACONFIG_AFS_SEL_BIT       =  4
-    MPU6050_ACONFIG_AFS_SEL_LENGTH    =  2
-    MPU6050_ACONFIG_ACCEL_HPF_BIT     =  2
-    MPU6050_ACONFIG_ACCEL_HPF_LENGTH  =  3
-
-    MPU6050_ACCEL_FS_2         = 0x00
-    MPU6050_ACCEL_FS_4         = 0x01
-    MPU6050_ACCEL_FS_8         = 0x02
-    MPU6050_ACCEL_FS_16        = 0x03
-
-    MPU6050_DHPF_RESET         = 0x00
-    MPU6050_DHPF_5             = 0x01
-    MPU6050_DHPF_2P5           = 0x02
-    MPU6050_DHPF_1P25          = 0x03
-    MPU6050_DHPF_0P63          = 0x04
-    MPU6050_DHPF_HOLD          = 0x07
-
-    MPU6050_TEMP_FIFO_EN_BIT   = 7
-    MPU6050_XG_FIFO_EN_BIT     = 6
-    MPU6050_YG_FIFO_EN_BIT     = 5
-    MPU6050_ZG_FIFO_EN_BIT     = 4
-    MPU6050_ACCEL_FIFO_EN_BIT  = 3
-    MPU6050_SLV2_FIFO_EN_BIT   = 2
-    MPU6050_SLV1_FIFO_EN_BIT   = 1
-    MPU6050_SLV0_FIFO_EN_BIT   = 0
-
-    MPU6050_MULT_MST_EN_BIT    = 7
-    MPU6050_WAIT_FOR_ES_BIT    = 6
-    MPU6050_SLV_3_FIFO_EN_BIT  = 5
-    MPU6050_I2C_MST_P_NSR_BIT  = 4
-    MPU6050_I2C_MST_CLK_BIT    = 3
-    MPU6050_I2C_MST_CLK_LENGTH = 4
-
-    MPU6050_CLOCK_DIV_348      = 0x0
-    MPU6050_CLOCK_DIV_333      = 0x1
-    MPU6050_CLOCK_DIV_320      = 0x2
-    MPU6050_CLOCK_DIV_308      = 0x3
-    MPU6050_CLOCK_DIV_296      = 0x4
-    MPU6050_CLOCK_DIV_286      = 0x5
-    MPU6050_CLOCK_DIV_276      = 0x6
-    MPU6050_CLOCK_DIV_267      = 0x7
-    MPU6050_CLOCK_DIV_258      = 0x8
-    MPU6050_CLOCK_DIV_500      = 0x9
-    MPU6050_CLOCK_DIV_471      = 0xA
-    MPU6050_CLOCK_DIV_444      = 0xB
-    MPU6050_CLOCK_DIV_421      = 0xC
-    MPU6050_CLOCK_DIV_400      = 0xD
-    MPU6050_CLOCK_DIV_381      = 0xE
-    MPU6050_CLOCK_DIV_364      = 0xF
-
-    MPU6050_I2C_SLV_RW_BIT     = 7
-    MPU6050_I2C_SLV_ADDR_BIT   = 6
-    MPU6050_I2C_SLV_ADDR_LENGTH = 7
-    MPU6050_I2C_SLV_EN_BIT      = 7
-    MPU6050_I2C_SLV_BYTE_SW_BIT = 6
-    MPU6050_I2C_SLV_REG_DIS_BIT = 5
-    MPU6050_I2C_SLV_GRP_BIT     = 4
-    MPU6050_I2C_SLV_LEN_BIT     = 3
-    MPU6050_I2C_SLV_LEN_LENGTH  = 4
-
-    MPU6050_I2C_SLV4_RW_BIT        = 7
-    MPU6050_I2C_SLV4_ADDR_BIT      = 6
-    MPU6050_I2C_SLV4_ADDR_LENGTH   = 7
-    MPU6050_I2C_SLV4_EN_BIT        = 7
-    MPU6050_I2C_SLV4_INT_EN_BIT    = 6
-    MPU6050_I2C_SLV4_REG_DIS_BIT   = 5
-    MPU6050_I2C_SLV4_MST_DLY_BIT   = 4
-    MPU6050_I2C_SLV4_MST_DLY_LENGTH = 5
-
-    MPU6050_MST_PASS_THROUGH_BIT   = 7
-    MPU6050_MST_I2C_SLV4_DONE_BIT  = 6
-    MPU6050_MST_I2C_LOST_ARB_BIT   = 5
-    MPU6050_MST_I2C_SLV4_NACK_BIT  = 4
-    MPU6050_MST_I2C_SLV3_NACK_BIT  = 3
-    MPU6050_MST_I2C_SLV2_NACK_BIT  = 2
-    MPU6050_MST_I2C_SLV1_NACK_BIT  = 1
-    MPU6050_MST_I2C_SLV0_NACK_BIT  = 0
-
-    MPU6050_INTCFG_INT_LEVEL_BIT       = 7
-    MPU6050_INTCFG_INT_OPEN_BIT        = 6
-    MPU6050_INTCFG_LATCH_INT_EN_BIT    = 5
-    MPU6050_INTCFG_INT_RD_CLEAR_BIT    = 4
-    MPU6050_INTCFG_FSYNC_INT_LEVEL_BIT = 3
-    MPU6050_INTCFG_FSYNC_INT_EN_BIT    = 2
-    MPU6050_INTCFG_I2C_BYPASS_EN_BIT   = 1
-    MPU6050_INTCFG_CLKOUT_EN_BIT       = 0
-
-    MPU6050_INTMODE_ACTIVEHIGH = 0x00
-    MPU6050_INTMODE_ACTIVELOW  = 0x01
-
-    MPU6050_INTDRV_PUSHPULL    = 0x00
-    MPU6050_INTDRV_OPENDRAIN   = 0x01
-
-    MPU6050_INTLATCH_50USPULSE = 0x00
-    MPU6050_INTLATCH_WAITCLEAR = 0x01
-
-    MPU6050_INTCLEAR_STATUSREAD = 0x00
-    MPU6050_INTCLEAR_ANYREAD    = 0x01
-
-    MPU6050_INTERRUPT_FF_BIT           = 7
-    MPU6050_INTERRUPT_MOT_BIT          = 6
-    MPU6050_INTERRUPT_ZMOT_BIT         = 5
-    MPU6050_INTERRUPT_FIFO_OFLOW_BIT   = 4
-    MPU6050_INTERRUPT_I2C_MST_INT_BIT  = 3
-    MPU6050_INTERRUPT_PLL_RDY_INT_BIT  = 2
-    MPU6050_INTERRUPT_DMP_INT_BIT      = 1
-    MPU6050_INTERRUPT_DATA_RDY_BIT     = 0
-
-    # TODO: figure out what these actually do
-    # UMPL source code is not very obivous
-    MPU6050_DMPINT_5_BIT           = 5
-    MPU6050_DMPINT_4_BIT           = 4
-    MPU6050_DMPINT_3_BIT           = 3
-    MPU6050_DMPINT_2_BIT           = 2
-    MPU6050_DMPINT_1_BIT           = 1
-    MPU6050_DMPINT_0_BIT           = 0
-
-    MPU6050_MOTION_MOT_XNEG_BIT    = 7
-    MPU6050_MOTION_MOT_XPOS_BIT    = 6
-    MPU6050_MOTION_MOT_YNEG_BIT    = 5
-    MPU6050_MOTION_MOT_YPOS_BIT    = 4
-    MPU6050_MOTION_MOT_ZNEG_BIT    = 3
-    MPU6050_MOTION_MOT_ZPOS_BIT    = 2
-    MPU6050_MOTION_MOT_ZRMOT_BIT   = 0
-
-    MPU6050_DELAYCTRL_DELAY_ES_SHADOW_BIT  = 7
-    MPU6050_DELAYCTRL_I2C_SLV4_DLY_EN_BIT  = 4
-    MPU6050_DELAYCTRL_I2C_SLV3_DLY_EN_BIT  = 3
-    MPU6050_DELAYCTRL_I2C_SLV2_DLY_EN_BIT  = 2
-    MPU6050_DELAYCTRL_I2C_SLV1_DLY_EN_BIT  = 1
-    MPU6050_DELAYCTRL_I2C_SLV0_DLY_EN_BIT  = 0
-
-    MPU6050_PATHRESET_GYRO_RESET_BIT   = 2
-    MPU6050_PATHRESET_ACCEL_RESET_BIT  = 1
-    MPU6050_PATHRESET_TEMP_RESET_BIT   = 0
-
-    MPU6050_DETECT_ACCEL_ON_DELAY_BIT     = 5
-    MPU6050_DETECT_ACCEL_ON_DELAY_LENGTH  = 2
-    MPU6050_DETECT_FF_COUNT_BIT           = 3
-    MPU6050_DETECT_FF_COUNT_LENGTH        = 2
-    MPU6050_DETECT_MOT_COUNT_BIT          = 1
-    MPU6050_DETECT_MOT_COUNT_LENGTH       = 2
-
-    MPU6050_DETECT_DECREMENT_RESET = 0x0
-    MPU6050_DETECT_DECREMENT_1     = 0x1
-    MPU6050_DETECT_DECREMENT_2     = 0x2
-    MPU6050_DETECT_DECREMENT_4     = 0x3
-
-    MPU6050_USERCTRL_DMP_EN_BIT            = 7
-    MPU6050_USERCTRL_FIFO_EN_BIT           = 6
-    MPU6050_USERCTRL_I2C_MST_EN_BIT        = 5
-    MPU6050_USERCTRL_I2C_IF_DIS_BIT        = 4
-    MPU6050_USERCTRL_DMP_RESET_BIT         = 3
-    MPU6050_USERCTRL_FIFO_RESET_BIT        = 2
-    MPU6050_USERCTRL_I2C_MST_RESET_BIT     = 1
-    MPU6050_USERCTRL_SIG_COND_RESET_BIT    = 0
-
-    MPU6050_PWR1_DEVICE_RESET_BIT  = 7
-    MPU6050_PWR1_SLEEP_BIT         = 6
-    MPU6050_PWR1_CYCLE_BIT         = 5
-    MPU6050_PWR1_TEMP_DIS_BIT      = 3
-    MPU6050_PWR1_CLKSEL_BIT        = 2
-    MPU6050_PWR1_CLKSEL_LENGTH     = 3
-
-    MPU6050_CLOCK_INTERNAL        =  0x00
-    MPU6050_CLOCK_PLL_XGYRO       =  0x01
-    MPU6050_CLOCK_PLL_YGYRO       =  0x02
-    MPU6050_CLOCK_PLL_ZGYRO       =  0x03
-    MPU6050_CLOCK_PLL_EXT32K      =  0x04
-    MPU6050_CLOCK_PLL_EXT19M      =  0x05
-    MPU6050_CLOCK_KEEP_RESET      =  0x07
-
-    MPU6050_PWR2_LP_WAKE_CTRL_BIT     = 7
-    MPU6050_PWR2_LP_WAKE_CTRL_LENGTH  = 2
-    MPU6050_PWR2_STBY_XA_BIT          = 5
-    MPU6050_PWR2_STBY_YA_BIT          = 4
-    MPU6050_PWR2_STBY_ZA_BIT          = 3
-    MPU6050_PWR2_STBY_XG_BIT          = 2
-    MPU6050_PWR2_STBY_YG_BIT          = 1
-    MPU6050_PWR2_STBY_ZG_BIT          = 0
-
-    MPU6050_WAKE_FREQ_1P25     = 0x0
-    MPU6050_WAKE_FREQ_2P5      = 0x1
-    MPU6050_WAKE_FREQ_5        = 0x2
-    MPU6050_WAKE_FREQ_10       = 0x3
-
-    MPU6050_BANKSEL_PRFTCH_EN_BIT      = 6
-    MPU6050_BANKSEL_CFG_USER_BANK_BIT  = 5
-    MPU6050_BANKSEL_MEM_SEL_BIT        = 4
-    MPU6050_BANKSEL_MEM_SEL_LENGTH     = 5
- 
-    MPU6050_BANKSEL_PRFTCH_EN_BIT = 6
-    MPU6050_BANKSEL_CFG_USER_BANK_BIT = 5
-    MPU6050_BANKSEL_MEM_SEL_BIT   = 4
-    MPU6050_BANKSEL_MEM_SEL_LENGTH = 5    
-    
-    MPU6050_WHO_AM_I_BIT          = 6
-    MPU6050_WHO_AM_I_LENGTH       = 6    
-    
-    # DMP
-    
-    MPU6050_DMP_MEMORY_BANKS      = 8
-    MPU6050_DMP_MEMORY_BANK_SIZE  = 256
-    MPU6050_DMP_MEMORY_CHUNK_SIZE = 16
-    
-    MPU6050_DMP_CODE_SIZE         = 1929    # dmpMemory[]
-    MPU6050_DMP_CONFIG_SIZE       = 192     # dmpConfig[]
-    MPU6050_DMP_UPDATES_SIZE      = 47      # dmpUpdates[]
     # ====================================================================================================
     # | Default MotionApps v2.0 42-byte FIFO packet structure:                                           |
     # |                                                                                                  |
@@ -582,381 +577,377 @@ class MPU6050:
     dmpPacketSize = 42
     
     # construct a new object with the I2C address of the MPU6050
-    def __init__(self, i2c, address = MPU6050_DEFAULT_ADDRESS):
+    def __init__(self,  i2c, address = MPU6050_DEFAULT_ADDRESS):
         self.i2c = i2c
         self.addr = address
         
     def initialize(self):
-        self.setClockSource(self.MPU6050_CLOCK_PLL_XGYRO)
-        self.setFullScaleGyroRange(self.MPU6050_GYRO_FS_250)
-        self.setFullScaleAccelRange(self.MPU6050_ACCEL_FS_2)   
+        self.setClockSource(MPU6050_CLOCK_PLL_XGYRO)
+        self.setFullScaleGyroRange(MPU6050_GYRO_FS_250)
+        self.setFullScaleAccelRange(MPU6050_ACCEL_FS_2)   
         self.setSleepEnabled(False)
         
     def testConnection(self):
         return self.getDeviceID() == 0x34
     
     def getAuxVDDIOLevel(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_YG_OFFS_TC, self.MPU6050_TC_PWR_MODE_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_PWR_MODE_BIT)
         
     def setAuxVDDIOLevel(self, level):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_YG_OFFS_TC, self.MPU6050_TC_PWR_MODE_BIT, level)
+        self.i2c.writeBit(self.addr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_PWR_MODE_BIT, level)
     
     def getRate(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_SMPLRT_DIV)
+        return self.i2c.readU8(self.addr, MPU6050_RA_SMPLRT_DIV)
         
     def setRate(self, value):
-        self.i2c.write8(self.addr, self.MPU6050_RA_SMPLRT_DIV, value)
+        self.i2c.write8(self.addr, MPU6050_RA_SMPLRT_DIV, value)
     
     def getExternalFrameSync(self):
-        return self.i2c.readBits(self.addr, self.MPU6050_RA_CONFIG, self.MPU6050_CFG_EXT_SYNC_SET_BIT, self.MPU6050_CFG_EXT_SYNC_SET_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_CONFIG, MPU6050_CFG_EXT_SYNC_SET_BIT, MPU6050_CFG_EXT_SYNC_SET_LENGTH)
 
     def setExternalFrameSync(self, sync):
-        self.i2c.writeBits(self.addr, self.MPU6050_RA_CONFIG, self.MPU6050_CFG_EXT_SYNC_SET_BIT, self.MPU6050_CFG_EXT_SYNC_SET_LENGTH, sync)
+        self.i2c.writeBits(self.addr, MPU6050_RA_CONFIG, MPU6050_CFG_EXT_SYNC_SET_BIT, MPU6050_CFG_EXT_SYNC_SET_LENGTH, sync)
     
     def getDLPFMode(self):
-        return self.i2c.readBits(self.addr, self.MPU6050_RA_CONFIG, self.MPU6050_CFG_DLPF_CFG_BIT, self.MPU6050_CFG_DLPF_CFG_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_CONFIG, MPU6050_CFG_DLPF_CFG_BIT, MPU6050_CFG_DLPF_CFG_LENGTH)
         
     def setDLPFMode(self, mode):
-        self.i2c.writeBits(self.addr, self.MPU6050_RA_CONFIG, self.MPU6050_CFG_DLPF_CFG_BIT, self.MPU6050_CFG_DLPF_CFG_LENGTH, mode)
+        self.i2c.writeBits(self.addr, MPU6050_RA_CONFIG, MPU6050_CFG_DLPF_CFG_BIT, MPU6050_CFG_DLPF_CFG_LENGTH, mode)
      
     def getFullScaleGyroRange(self):
-        return self.i2c.readBits(self.addr, self.MPU6050_RA_GYRO_CONFIG, self.MPU6050_GCONFIG_FS_SEL_BIT, self.MPU6050_GCONFIG_FS_SEL_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_GYRO_CONFIG, MPU6050_GCONFIG_FS_SEL_BIT, MPU6050_GCONFIG_FS_SEL_LENGTH)
 
     def setFullScaleGyroRange(self, range):
-        self.i2c.writeBits(self.addr, self.MPU6050_RA_GYRO_CONFIG, self.MPU6050_GCONFIG_FS_SEL_BIT, self.MPU6050_GCONFIG_FS_SEL_LENGTH, range)        
+        self.i2c.writeBits(self.addr, MPU6050_RA_GYRO_CONFIG, MPU6050_GCONFIG_FS_SEL_BIT, MPU6050_GCONFIG_FS_SEL_LENGTH, range)        
     
     def getAccelXSelfTest(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_XA_ST_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_XA_ST_BIT)
 
     def setAccelXSelfTest(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_XA_ST_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_XA_ST_BIT, enabled)
 
     def getAccelYSelfTest(self):
-        return self.readBit(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_YA_ST_BIT)
+        return self.readBit(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_YA_ST_BIT)
         
     def setAccelYSelfTest(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_YA_ST_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_YA_ST_BIT, enabled)
 
     def getAccelZSelfTest(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_ZA_ST_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_ZA_ST_BIT)
     
     def setAccelZSelfTest(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_ZA_ST_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_ZA_ST_BIT, enabled)
 
     def getFullScaleAccelRange(self):
-        return self.i2c.readBits(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_AFS_SEL_BIT, self.MPU6050_ACONFIG_AFS_SEL_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_AFS_SEL_BIT, MPU6050_ACONFIG_AFS_SEL_LENGTH)
         
     def setFullScaleAccelRange(self, value):
-        self.i2c.writeBits(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_AFS_SEL_BIT, self.MPU6050_ACONFIG_AFS_SEL_LENGTH, value)
+        self.i2c.writeBits(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_AFS_SEL_BIT, MPU6050_ACONFIG_AFS_SEL_LENGTH, value)
             
     def getDHPFMode(self):
-        return self.i2c.readBits(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_ACCEL_HPF_BIT, self.MPU6050_ACONFIG_ACCEL_HPF_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_ACCEL_HPF_BIT, MPU6050_ACONFIG_ACCEL_HPF_LENGTH)
 
     def setDHPFMode(self, bandwith):
-        self.i2c.writeBits(self.addr, self.MPU6050_RA_ACCEL_CONFIG, self.MPU6050_ACONFIG_ACCEL_HPF_BIT, self.MPU6050_ACONFIG_ACCEL_HPF_LENGTH, bandwidth)
+        self.i2c.writeBits(self.addr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_ACCEL_HPF_BIT, MPU6050_ACONFIG_ACCEL_HPF_LENGTH, bandwidth)
 
     def getFreefallDetectionThreshold(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_FF_THR)
+        return self.i2c.readU8(self.addr, MPU6050_RA_FF_THR)
         
     def setFreefallDetectionThreshold(self, treshold):
-        self.i2c.write8(self.addr, self.MPU6050_RA_FF_THR, treshold)
+        self.i2c.write8(self.addr, MPU6050_RA_FF_THR, treshold)
 
     def getFreefallDetectionDuration(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_FF_DUR)
+        return self.i2c.readU8(self.addr, MPU6050_RA_FF_DUR)
 
     def setFreefallDetectionDuration(self, duration):
-        self.i2c.write8(self.addr, self.MPU6050_RA_FF_DUR)
+        self.i2c.write8(self.addr, MPU6050_RA_FF_DUR)
     
     def getMotionDetectionThreshold(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_MOT_THR)
+        return self.i2c.readU8(self.addr, MPU6050_RA_MOT_THR)
         
     def setMotionDetectionThreshold(self, treshold):
-        self.i2c.write8(self.addr, self.MPU6050_RA_MOT_THR, treshold)    
+        self.i2c.write8(self.addr, MPU6050_RA_MOT_THR, treshold)    
 
     def getMotionDetectionDuration(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_MOT_DUR)
+        return self.i2c.readU8(self.addr, MPU6050_RA_MOT_DUR)
 
     def setMotionDetectionDuration(self, duration):
-        self.i2c.write8(self.addr, self.MPU6050_RA_MOT_DUR, duration)
+        self.i2c.write8(self.addr, MPU6050_RA_MOT_DUR, duration)
 
     def getZeroMotionDetectionThreshold(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_ZRMOT_THR)
+        return self.i2c.readU8(self.addr, MPU6050_RA_ZRMOT_THR)
 
     def setZeroMotionDetectionThreshold(self, treshold):
-        self.i2c.write8(self.addr, self.MPU6050_RA_ZRMOT_THR, treshold)
+        self.i2c.write8(self.addr, MPU6050_RA_ZRMOT_THR, treshold)
 
     def getZeroMotionDetectionDuration(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_ZRMOT_DUR)
+        return self.i2c.readU8(self.addr, MPU6050_RA_ZRMOT_DUR)
 
     def setZeroMotionDetectionDuration(self, duration):
-        self.i2c.write8(self.addr, self.MPU6050_RA_ZRMOT_DUR, duration)
+        self.i2c.write8(self.addr, MPU6050_RA_ZRMOT_DUR, duration)
         
     def getTempFIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_TEMP_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_TEMP_FIFO_EN_BIT)
         
     def setTempFIFOEnabled(self, enabled):
-        self.i2c.write8(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_TEMP_FIFO_EN_BIT, enabled)
+        self.i2c.write8(self.addr, MPU6050_RA_FIFO_EN, MPU6050_TEMP_FIFO_EN_BIT, enabled)
         
     def getXGyroFIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_XG_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_XG_FIFO_EN_BIT)
         
     def setXGyroFIFOEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_XG_FIFO_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_XG_FIFO_EN_BIT, enabled)
         
     def getYGyroFIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_YG_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_YG_FIFO_EN_BIT)
         
     def setYGyroFIFOEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_YG_FIFO_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_YG_FIFO_EN_BIT, enabled)
         
     def getZGyroFIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_ZG_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_ZG_FIFO_EN_BIT)
         
     def setZGyroFIFOEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_ZG_FIFO_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_ZG_FIFO_EN_BIT, enabled)
         
     def getAccelFIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_ACCEL_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_ACCEL_FIFO_EN_BIT)
         
     def setAccelFIFOEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_ACCEL_FIFO_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_ACCEL_FIFO_EN_BIT, enabled)
         
     def getSlave2FIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_SLV2_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_SLV2_FIFO_EN_BIT)
         
     def setSlave2FIFOEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_SLV2_FIFO_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_SLV2_FIFO_EN_BIT, enabled)
         
     def getSlave1FIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_SLV1_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_SLV1_FIFO_EN_BIT)
         
     def setSlave1FIFOEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_SLV1_FIFO_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_SLV1_FIFO_EN_BIT, enabled)
         
     def getSlave0FIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_SLV0_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_SLV0_FIFO_EN_BIT)
         
     def setSlave0FIFOEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_FIFO_EN, self.MPU6050_SLV0_FIFO_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_FIFO_EN, MPU6050_SLV0_FIFO_EN_BIT, enabled)
         
     def getMultiMasterEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_MULT_MST_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_MULT_MST_EN_BIT)
         
     def setMultiMasterEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_MULT_MST_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_MULT_MST_EN_BIT, enabled)
         
     def getWaitForExternalSensorEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_WAIT_FOR_ES_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_WAIT_FOR_ES_BIT)
         
     def setWaitForExternalSensorEnabled(self, value):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_WAIT_FOR_ES_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_WAIT_FOR_ES_BIT, enabled)
         
     def getSlave3FIFOEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_SLV_3_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_SLV_3_FIFO_EN_BIT)
         
     def setSlave3FIFOEnabled(self, enabled):    
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_SLV_3_FIFO_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_SLV_3_FIFO_EN_BIT, enabled)
         
     def getSlaveReadWriteTransitionEnabled(self):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_I2C_MST_P_NSR_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_I2C_MST_P_NSR_BIT)
         
     def setSlaveReadWriteTransitionEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_I2C_MST_P_NSR_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_I2C_MST_P_NSR_BIT, enabled)
         
     def getMasterClockSpeed(self):
-        return self.i2c.readBits(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_I2C_MST_CLK_BIT, self.MPU6050_I2C_MST_CLK_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_I2C_MST_CLK_BIT, MPU6050_I2C_MST_CLK_LENGTH)
         
     def setMasterClockSpeed(self, speed):
-        self.i2c.writeBits(self.addr, self.MPU6050_RA_I2C_MST_CTRL, self.MPU6050_I2C_MST_CLK_BIT, self.MPU6050_I2C_MST_CLK_LENGTH, speed)
+        self.i2c.writeBits(self.addr, MPU6050_RA_I2C_MST_CTRL, MPU6050_I2C_MST_CLK_BIT, MPU6050_I2C_MST_CLK_LENGTH, speed)
         
     def getSlaveAddress(self, num):
         if num > 3:
             return 0
             
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_I2C_SLV0_ADDR + num * 3)    
+        return self.i2c.readU8(self.addr, MPU6050_RA_I2C_SLV0_ADDR + num * 3)    
         
     def setSlaveAddress(self, num, address):
         if num > 3:
             return
-        self.i2c.write8(self.addr, self.MPU6050_RA_I2C_SLV0_ADDR + num * 3, address)        
+        self.i2c.write8(self.addr, MPU6050_RA_I2C_SLV0_ADDR + num * 3, address)        
         
     def getSlaveRegister(self, num):
         if num > 3:
             return 0
         
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_I2C_SLV0_REG + num * 3)
+        return self.i2c.readU8(self.addr, MPU6050_RA_I2C_SLV0_REG + num * 3)
         
     def setSlaveRegister(self, num, reg):
         if num > 3:
             return
-        self.i2c.write8(delf.addr, self.MPU6050_RA_I2C_SLV0_REG + num * 3, reg)      
+        self.i2c.write8(delf.addr, MPU6050_RA_I2C_SLV0_REG + num * 3, reg)      
         
     def getSlaveEnabled(self, num):
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_EN_BIT)
         
     def setSlaveEnabled(self, num, enabled):
         if num > 3:
             return
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_EN_BIT, enabled)    
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_EN_BIT, enabled)    
         
     def getSlaveWordByteSwap(self, num):
         if num > 3:
             return 0
-            
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_BYTE_SW_BIT)    
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_BYTE_SW_BIT)    
         
     def setSlaveWordByteSwap(self, num, enabled):
         if num > 3:
             return
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_BYTE_SW_BIT, enabled)    
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_BYTE_SW_BIT, enabled)    
             
         
     def getSlaveWriteMode(self, num):
         if num > 3:
             return 0
-            
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_REG_DIS_BIT)    
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_REG_DIS_BIT)    
         
     def setSlaveWriteMode(self, num, mode):
         if num > 3:
             return
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_REG_DIS_BIT, mode)    
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_REG_DIS_BIT, mode)    
         
     def getSlaveWordGroupOffset(self, num):
         if num > 3:
             return 0
-            
-        return self.i2c.readBit(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_GRP_BIT)    
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_GRP_BIT)    
         
     def setSlaveWordGroupOffset(self, num, enabled):
         if num > 3:
             return
-        self.i2c.writeBit(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_GRP_BIT, enabled)    
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_GRP_BIT, enabled)    
         
     def getSlaveDataLength(self, num):
         if num > 3:
             return 0
-        
-        return self.i2c.readBits(self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_LEN_BIT, self.MPU6050_I2C_SLV_LEN_LENGTH)
+        return self.i2c.readBits(MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_LEN_BIT, MPU6050_I2C_SLV_LEN_LENGTH)
         
     def setSlaveDataLength(self, num, length):
         if num > 3:
             return
-        self.i2c.writeBits(self.addr, self.MPU6050_RA_I2C_SLV0_CTRL + num * 3, self.MPU6050_I2C_SLV_LEN_BIT, self.MPU6050_I2C_SLV_LEN_LENGTH, length)
+        self.i2c.writeBits(self.addr, MPU6050_RA_I2C_SLV0_CTRL + num * 3, MPU6050_I2C_SLV_LEN_BIT, MPU6050_I2C_SLV_LEN_LENGTH, length)
         
     def getSlave4Address(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_I2C_SLV4_ADDR)
+        return self.i2c.readU8(self.addr, MPU6050_RA_I2C_SLV4_ADDR)
         
     def setSlave4Address(self, address):
-        self.i2c.write8(self.addr, self.MPU6050_RA_I2C_SLV4_ADDR, address)
+        self.i2c.write8(self.addr, MPU6050_RA_I2C_SLV4_ADDR, address)
         
     def getSlave4Register(self):
-        return self.i2c.readU8(self.addr, self.MPU6050_RA_I2C_SLV4_REG)
+        return self.i2c.readU8(self.addr, MPU6050_RA_I2C_SLV4_REG)
         
     def setSlave4Register(self, reg):
-        self.i2c.write8(self.addr, self.MPU6050_RA_I2C_SLV4_REG, reg)
+        self.i2c.write8(self.addr, MPU6050_RA_I2C_SLV4_REG, reg)
         
     def setSlave4OutputByte(self, data):
         self.i2c.write8(self.addr, MPU6050_RA_I2C_SLV4_DO, data)
         
     def getSlave4Enabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, self.MPU6050_I2C_SLV4_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, MPU6050_I2C_SLV4_EN_BIT)
         
     def setSlave4Enabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, self.MPU6050_I2C_SLV4_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, MPU6050_I2C_SLV4_EN_BIT, enabled)
         
     def getSlave4InterruptEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, self.MPU6050_I2C_SLV4_INT_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, MPU6050_I2C_SLV4_INT_EN_BIT)
         
     def setSlave4InterruptEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, self.MPU6050_I2C_SLV4_INT_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, MPU6050_I2C_SLV4_INT_EN_BIT, enabled)
         
     def getSlave4WriteMode(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, self.MPU6050_I2C_SLV4_REG_DIS_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, MPU6050_I2C_SLV4_REG_DIS_BIT)
         
     def setSlave4WriteMode(self, mode):
-        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, self.MPU6050_I2C_SLV4_REG_DIS_BIT, mode)
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_SLV4_CTRL, MPU6050_I2C_SLV4_REG_DIS_BIT, mode)
         
     def getSlave4MasterDelay(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_I2C_SLV4_CTRL, self.MPU6050_I2C_SLV4_MST_DLY_BIT, self.MPU6050_I2C_SLV4_MST_DLY_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_I2C_SLV4_CTRL, MPU6050_I2C_SLV4_MST_DLY_BIT, MPU6050_I2C_SLV4_MST_DLY_LENGTH)
         
     def setSlave4MasterDelay(self, delay):
-        self.i2c.writeBits(self.addr, MPU6050_RA_I2C_SLV4_CTRL, self.MPU6050_I2C_SLV4_MST_DLY_BIT, self.MPU6050_I2C_SLV4_MST_DLY_LENGTH, delay)
+        self.i2c.writeBits(self.addr, MPU6050_RA_I2C_SLV4_CTRL, MPU6050_I2C_SLV4_MST_DLY_BIT, MPU6050_I2C_SLV4_MST_DLY_LENGTH, delay)
         
     def getSlate4InputByte(self):
         return self.i2c.readU8(self.addr, MPU6050_RA_I2C_SLV4_DI)
         
     def getPassthroughStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, self.MPU6050_MST_PASS_THROUGH_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, MPU6050_MST_PASS_THROUGH_BIT)
         
     def getSlave4IsDone(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, self.MPU6050_MST_I2C_SLV4_DONE_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, MPU6050_MST_I2C_SLV4_DONE_BIT)
         
     def getLostArbitration(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, self.MPU6050_MST_I2C_LOST_ARB_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, MPU6050_MST_I2C_LOST_ARB_BIT)
         
     def getSlave4Nack(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, self.MPU6050_MST_I2C_SLV4_NACK_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, MPU6050_MST_I2C_SLV4_NACK_BIT)
         
     def getSlave3Nack(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, self.MPU6050_MST_I2C_SLV3_NACK_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, MPU6050_MST_I2C_SLV3_NACK_BIT)
         
     def getSlave2Nack(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, self.MPU6050_MST_I2C_SLV2_NACK_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, MPU6050_MST_I2C_SLV2_NACK_BIT)
         
     def getSlave1Nack(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, self.MPU6050_MST_I2C_SLV1_NACK_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, MPU6050_MST_I2C_SLV1_NACK_BIT)
         
     def getSlave0Nack(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, self.MPU6050_MST_I2C_SLV0_NACK_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_STATUS, MPU6050_MST_I2C_SLV0_NACK_BIT)
         
     def getInterruptMode(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_INT_LEVEL_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_LEVEL_BIT)
         
     def setInterruptMode(self, mode):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_INT_LEVEL_BIT, mode)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_LEVEL_BIT, mode)
         
     def getInterruptDrive(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_INT_OPEN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_OPEN_BIT)
         
     def setInterruptDrive(self, drive):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_INT_OPEN_BIT, drive)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_OPEN_BIT, drive)
         
     def getInterruptLatch(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_LATCH_INT_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_LATCH_INT_EN_BIT)
 
     def setInterruptLatch(self, latch):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_LATCH_INT_EN_BIT, latch)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_LATCH_INT_EN_BIT, latch)
 
     def getInterruptLatchClear(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_INT_RD_CLEAR_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_RD_CLEAR_BIT)
     
     def setInterruptLatchClear(self, clear):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_INT_RD_CLEAR_BIT, clear)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_RD_CLEAR_BIT, clear)
 
     def getFSyncInterruptLevel(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_FSYNC_INT_LEVEL_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_FSYNC_INT_LEVEL_BIT)
 
     def setFSyncInterruptLevel(self, level):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_FSYNC_INT_LEVEL_BIT, level)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_FSYNC_INT_LEVEL_BIT, level)
 
     def getFSyncInterruptEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_FSYNC_INT_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_FSYNC_INT_EN_BIT)
 
     def setFSyncInterruptEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_FSYNC_INT_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_FSYNC_INT_EN_BIT, enabled)
 
     def getI2CBypassEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_I2C_BYPASS_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_I2C_BYPASS_EN_BIT)
 
     def setI2CBypassEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_I2C_BYPASS_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_I2C_BYPASS_EN_BIT, enabled)
 
     def getClockOutputEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_CLKOUT_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_CLKOUT_EN_BIT)
 
     def setClockOutputEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, self.MPU6050_INTCFG_CLKOUT_EN_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_CLKOUT_EN_BIT, enabled)
 
     def getIntEnabled(self):
         return self.i2c.readU8(self.addr, MPU6050_RA_INT_ENABLE)
@@ -965,61 +956,61 @@ class MPU6050:
         self.i2c.write8(self.addr, MPU6050_RA_INT_ENABLE, status)        
         
     def getIntFreefallEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_FF_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_FF_BIT)
         
     def setIntFreefallEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_FF_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_FF_BIT, enabled)
         
     def getIntMotionEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_MOT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_MOT_BIT)
         
     def setIntMotionEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_MOT_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_MOT_BIT, enabled)
         
     def getIntZeroMotionEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_ZMOT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_ZMOT_BIT)
         
     def setIntZeroMotionEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_ZMOT_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_ZMOT_BIT, enabled)
         
     def getIntFIFOBufferOverflowEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_FIFO_OFLOW_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_FIFO_OFLOW_BIT)
         
     def setIntFIFOBufferOverflowEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_FIFO_OFLOW_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_FIFO_OFLOW_BIT, enabled)
         
     def getIntI2CMasterEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_I2C_MST_INT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_I2C_MST_INT_BIT)
         
     def setIntI2CMasterEnabled(self, enabled):
         self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_I2C_MST_INT_BIT, enabled)
         
     def getIntDataReadyEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_DATA_RDY_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_DATA_RDY_BIT)
         
     def setIntDataReadyEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_DATA_RDY_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_DATA_RDY_BIT, enabled)
 
     def getIntStatus(self):
         return self.i2c.readU8(self.addr, MPU6050_RA_INT_STATUS)
 
     def getIntFreefallStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, self.MPU6050_INTERRUPT_FF_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_FF_BIT)
 
     def getIntMotionStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, self.MPU6050_INTERRUPT_MOT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_MOT_BIT)
 
     def getIntZeroMotionStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, self.MPU6050_INTERRUPT_ZMOT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_ZMOT_BIT)
 
     def getIntFIFOBufferOverflowStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, self.MPU6050_INTERRUPT_FIFO_OFLOW_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_FIFO_OFLOW_BIT)
 
     def getIntI2CMasterStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, self.MPU6050_INTERRUPT_I2C_MST_INT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_I2C_MST_INT_BIT)
 
     def getIntDataReadyStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, self.MPU6050_INTERRUPT_DATA_RDY_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_DATA_RDY_BIT)
 
     def getMotion9(self):
         # unknown
@@ -1056,7 +1047,7 @@ class MPU6050:
         pass
       
     def getExternalSensorByte(self, position):
-        return self.i2c.readU8(self.MPU6050_RA_EXT_SENS_DATA_00 + position)
+        return self.i2c.readU8(MPU6050_RA_EXT_SENS_DATA_00 + position)
 
     def getExternalSensorWord(self, position):
         pass
@@ -1065,25 +1056,25 @@ class MPU6050:
         pass
 
     def getXNegMotionDetected(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, self.MPU6050_MOTION_MOT_XNEG_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, MPU6050_MOTION_MOT_XNEG_BIT)
 
     def getXPosMotionDetected(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, self.MPU6050_MOTION_MOT_XPOS_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, MPU6050_MOTION_MOT_XPOS_BIT)
 
     def getYNegMotionDetected(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, self.MPU6050_MOTION_MOT_YNEG_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, MPU6050_MOTION_MOT_YNEG_BIT)
 
     def getYPosMotionDetected(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, self.MPU6050_MOTION_MOT_YPOS_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, MPU6050_MOTION_MOT_YPOS_BIT)
 
     def getZNegMotionDetected(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, self.MPU6050_MOTION_MOT_ZNEG_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, MPU6050_MOTION_MOT_ZNEG_BIT)
     
     def getZPosMotionDetected(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, self.MPU6050_MOTION_MOT_ZPOS_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, MPU6050_MOTION_MOT_ZPOS_BIT)
 
     def getZeroMotionDetected(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, self.MPU6050_MOTION_MOT_ZRMOT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, MPU6050_MOTION_MOT_ZRMOT_BIT)
 
     def setSlaveOutputByte(self, num, data):
         if num > 3:
@@ -1091,10 +1082,10 @@ class MPU6050:
         self.i2c.write8(self.addr, MPU6050_RA_I2C_SLV0_DO + num, data)    
 
     def getExternalShadowDelayEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_DELAY_CTRL, self.MPU6050_DELAYCTRL_DELAY_ES_SHADOW_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_I2C_MST_DELAY_CTRL, MPU6050_DELAYCTRL_DELAY_ES_SHADOW_BIT)
 
     def setExternalShadowDelayEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_MST_DELAY_CTRL, self.MPU6050_DELAYCTRL_DELAY_ES_SHADOW_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_I2C_MST_DELAY_CTRL, MPU6050_DELAYCTRL_DELAY_ES_SHADOW_BIT, enabled)
       
     def getSlaveDelayEnabled(self, num):
         # // MPU6050_DELAYCTRL_I2C_SLV4_DLY_EN_BIT is 4, SLV3 is 3, etc.
@@ -1107,126 +1098,126 @@ class MPU6050:
         self.i2c.writeBit(self.addr, MPU6050_RA_I2C_MST_DELAY_CTRL, num, enabled)
         
     def resetGyroscopePath(self):
-        self.i2c.writeBit(self.addr, MPU6050_RA_SIGNAL_PATH_RESET, self.MPU6050_PATHRESET_GYRO_RESET_BIT, True)
+        self.i2c.writeBit(self.addr, MPU6050_RA_SIGNAL_PATH_RESET, MPU6050_PATHRESET_GYRO_RESET_BIT, True)
         
     def resetAccelerometerPath(self):
-        self.i2c.writeBit(self.addr, MPU6050_RA_SIGNAL_PATH_RESET, self.MPU6050_PATHRESET_ACCEL_RESET_BIT, True)
+        self.i2c.writeBit(self.addr, MPU6050_RA_SIGNAL_PATH_RESET, MPU6050_PATHRESET_ACCEL_RESET_BIT, True)
         
     def resetTemperaturePath(self):
-        self.i2c.writeBit(self.addr, MPU6050_RA_SIGNAL_PATH_RESET, self.MPU6050_PATHRESET_TEMP_RESET_BIT, True)
+        self.i2c.writeBit(self.addr, MPU6050_RA_SIGNAL_PATH_RESET, MPU6050_PATHRESET_TEMP_RESET_BIT, True)
         
     def getAccelerometerPowerOnDelay(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, self.MPU6050_DETECT_ACCEL_ON_DELAY_BIT, self.MPU6050_DETECT_ACCEL_ON_DELAY_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, MPU6050_DETECT_ACCEL_ON_DELAY_BIT, MPU6050_DETECT_ACCEL_ON_DELAY_LENGTH)
         
     def setAccelerometerPowerOnDelay(self, delay):
-        self.i2c.writeBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, self.MPU6050_DETECT_ACCEL_ON_DELAY_BIT, self.MPU6050_DETECT_ACCEL_ON_DELAY_LENGTH, delay)
+        self.i2c.writeBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, MPU6050_DETECT_ACCEL_ON_DELAY_BIT, MPU6050_DETECT_ACCEL_ON_DELAY_LENGTH, delay)
         
     def getFreefallDetectionCounterDecrement(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, self.MPU6050_DETECT_FF_COUNT_BIT, self.MPU6050_DETECT_FF_COUNT_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, MPU6050_DETECT_FF_COUNT_BIT, MPU6050_DETECT_FF_COUNT_LENGTH)
         
     def setFreefallDetectionCounterDecrement(self, decrement):
-        self.i2c.writeBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, self.MPU6050_DETECT_FF_COUNT_BIT, self.MPU6050_DETECT_FF_COUNT_LENGTH, decrement)
+        self.i2c.writeBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, MPU6050_DETECT_FF_COUNT_BIT, MPU6050_DETECT_FF_COUNT_LENGTH, decrement)
         
     def getMotionDetectionCounterDecrement(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, self.MPU6050_DETECT_MOT_COUNT_BIT, self.MPU6050_DETECT_MOT_COUNT_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, MPU6050_DETECT_MOT_COUNT_BIT, MPU6050_DETECT_MOT_COUNT_LENGTH)
         
     def setMotionDetectionCounterDecrement(self, decrement):
-        self.i2c.writeBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, self.MPU6050_DETECT_MOT_COUNT_BIT, self.MPU6050_DETECT_MOT_COUNT_LENGTH, decrement)
+        self.i2c.writeBits(self.addr, MPU6050_RA_MOT_DETECT_CTRL, MPU6050_DETECT_MOT_COUNT_BIT, MPU6050_DETECT_MOT_COUNT_LENGTH, decrement)
         
     def getFIFOEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_FIFO_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_FIFO_EN_BIT)
          
     def setFIFOEnabled(self, status):
-        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_FIFO_EN_BIT, status)        
+        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_FIFO_EN_BIT, status)        
         
     def getI2CMasterModeEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_I2C_MST_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_MST_EN_BIT)
         
     def setI2CMasterModeEnabled(self, status):
-        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_I2C_MST_EN_BIT, status)        
+        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_MST_EN_BIT, status)        
         
     def switchSPIEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_I2C_IF_DIS_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_IF_DIS_BIT, enabled)
         
     def resetFIFO(self):
-        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_FIFO_RESET_BIT, True)           
+        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_FIFO_RESET_BIT, True)           
         
     def resetI2CMaster(self):
-        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_I2C_MST_RESET_BIT, True)        
+        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_MST_RESET_BIT, True)        
         
     def resetSensors(self):
-        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_SIG_COND_RESET_BIT, True)
+        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_SIG_COND_RESET_BIT, True)
         
     def reset(self):
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_DEVICE_RESET_BIT, True)       
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_DEVICE_RESET_BIT, True)       
         
     def getSleepEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_SLEEP_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT)
     
     def setSleepEnabled(self, status):
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_SLEEP_BIT, status)        
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT, status)        
         
     def getWakeCycleEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_CYCLE_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CYCLE_BIT)
         
     def setWakeCycleEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_CYCLE_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CYCLE_BIT, enabled)
         
     def getTempSensorEnabled(self):
-        result = self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_TEMP_DIS_BIT)
+        result = self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_TEMP_DIS_BIT)
         return result == 0 # 1 is actually disabled here
         
     def setTempSensorEnabled(self, enabled):
         # 1 is actually disabled here
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_TEMP_DIS_BIT, enabled != enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_TEMP_DIS_BIT, enabled != enabled)
         
     def getClockSource(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_CLKSEL_BIT, self.MPU6050_PWR1_CLKSEL_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLKSEL_BIT, MPU6050_PWR1_CLKSEL_LENGTH)
         
     def setClockSource(self, source):
-        self.i2c.writeBits(self.addr, MPU6050_RA_PWR_MGMT_1, self.MPU6050_PWR1_CLKSEL_BIT, self.MPU6050_PWR1_CLKSEL_LENGTH, source)        
+        self.i2c.writeBits(self.addr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLKSEL_BIT, MPU6050_PWR1_CLKSEL_LENGTH, source)        
         
     def getWakeFrequency(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_LP_WAKE_CTRL_BIT, self.MPU6050_PWR2_LP_WAKE_CTRL_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_LP_WAKE_CTRL_BIT, MPU6050_PWR2_LP_WAKE_CTRL_LENGTH)
         
     def setWakeFrequency(self, frequency):
-        self.i2c.writeBits(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_LP_WAKE_CTRL_BIT, self.MPU6050_PWR2_LP_WAKE_CTRL_LENGTH, frequency)
+        self.i2c.writeBits(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_LP_WAKE_CTRL_BIT, MPU6050_PWR2_LP_WAKE_CTRL_LENGTH, frequency)
         
     def getStandbyXAccelEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_XA_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_XA_BIT)
         
     def setStandbyXAccelEnabled(self, enabled):
-        self.i2c.writeBit(self.MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_XA_BIT, enabled)
+        self.i2c.writeBit(MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_XA_BIT, enabled)
         
     def getStandbyYAccelEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_YA_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_YA_BIT)
         
     def setStandbyYAccelEnabled(self, enabled):  
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_YA_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_YA_BIT, enabled)
         
     def getStandbyZAccelEnabled(self):    
-        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_ZA_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_ZA_BIT)
         
     def setStandbyZAccelEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_ZA_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_ZA_BIT, enabled)
         
     def getStandbyXGyroEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_XG_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_XG_BIT)
 
     def setStandbyXGyroEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_XG_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_XG_BIT, enabled)
 
     def getStandbyYGyroEnabled(self):
-        return self.i2c.readBit(self.MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_YG_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_YG_BIT)
 
     def setStandbyYGyroEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_YG_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_YG_BIT, enabled)
 
     def getStandbyZGyroEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_ZG_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_ZG_BIT)
 
     def setStandbyZGyroEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, self.MPU6050_PWR2_STBY_ZG_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_PWR_MGMT_2, MPU6050_PWR2_STBY_ZG_BIT, enabled)
 
     def getFIFOCount(self):
         return self.i2c.readU16(self.adde, MPU6050_RA_FIFO_COUNTH)
@@ -1241,35 +1232,35 @@ class MPU6050:
         self.i2c.write8(self.addr, MPU6050_RA_FIFO_R_W, data)
 
     def getDeviceID(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_WHO_AM_I, self.MPU6050_WHO_AM_I_BIT, self.MPU6050_WHO_AM_I_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_WHO_AM_I, MPU6050_WHO_AM_I_BIT, MPU6050_WHO_AM_I_LENGTH)
 
     def setDeviceID(self, id):
-        self.i2c.writeBits(self.addr, MPU6050_RA_WHO_AM_I, self.MPU6050_WHO_AM_I_BIT, self.MPU6050_WHO_AM_I_LENGTH, id)
+        self.i2c.writeBits(self.addr, MPU6050_RA_WHO_AM_I, MPU6050_WHO_AM_I_BIT, MPU6050_WHO_AM_I_LENGTH, id)
 
     def getOTPBankValid(self):
-        result = self.i2c.readBit(self.addr, MPU6050_RA_XG_OFFS_TC, self.MPU6050_TC_OTP_BNK_VLD_BIT)
+        result = self.i2c.readBit(self.addr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OTP_BNK_VLD_BIT)
         return result
         
     def setOTPBankValid(self, status):
-        self.i2c.writeBit(self.addr, MPU6050_RA_XG_OFFS_TC, self.MPU6050_TC_OTP_BNK_VLD_BIT, status)
+        self.i2c.writeBit(self.addr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OTP_BNK_VLD_BIT, status)
 
     def getXGyroOffset(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_XG_OFFS_TC, self.MPU6050_TC_OFFSET_BIT, self.MPU6050_TC_OFFSET_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH)
     
     def setXGyroOffset(self, offset):
-        self.i2c.writeBits(self.addr, MPU6050_RA_XG_OFFS_TC, self.MPU6050_TC_OFFSET_BIT, self.MPU6050_TC_OFFSET_LENGTH, offset)
+        self.i2c.writeBits(self.addr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset)
 
     def getYGyroOffset(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_YG_OFFS_TC, self.MPU6050_TC_OFFSET_BIT, self.MPU6050_TC_OFFSET_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH)
     
     def setYGyroOffset(self, offset):
-        self.i2c.writeBits(self.addr, MPU6050_RA_YG_OFFS_TC, self.MPU6050_TC_OFFSET_BIT, self.MPU6050_TC_OFFSET_LENGTH, offset)
+        self.i2c.writeBits(self.addr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset)
 
     def getZGyroOffset(self):
-        return self.i2c.readBits(self.addr, MPU6050_RA_ZG_OFFS_TC, self.MPU6050_TC_OFFSET_BIT, self.MPU6050_TC_OFFSET_LENGTH)
+        return self.i2c.readBits(self.addr, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH)
         
     def setZGyroOffset(self, offset):
-        self.i2c.writeBits(self.addr, MPU6050_RA_ZG_OFFS_TC, self.MPU6050_TC_OFFSET_BIT, self.MPU6050_TC_OFFSET_LENGTH, offset)        
+        self.i2c.writeBits(self.addr, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset)        
         
     def getXFineGain(self):
         return self.i2c.readU8(self.addr, MPU6050_RA_X_FINE_GAIN)
@@ -1332,49 +1323,49 @@ class MPU6050:
         return True        
 
     def getIntPLLReadyEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_PLL_RDY_INT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_PLL_RDY_INT_BIT)
      
     def setIntPLLReadyEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_PLL_RDY_INT_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_PLL_RDY_INT_BIT, enabled)
      
     def getIntDMPEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_DMP_INT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_DMP_INT_BIT)
      
     def setIntDMPEnabled(self, enabled):
-        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, self.MPU6050_INTERRUPT_DMP_INT_BIT, enabled)
+        self.i2c.writeBit(self.addr, MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_DMP_INT_BIT, enabled)
         
     def getDMPInt5Status(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, self.MPU6050_DMPINT_5_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, MPU6050_DMPINT_5_BIT)
         
     def getDMPInt4Status(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, self.MPU6050_DMPINT_4_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, MPU6050_DMPINT_4_BIT)
         
     def getDMPInt3Status(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, self.MPU6050_DMPINT_3_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, MPU6050_DMPINT_3_BIT)
         
     def getDMPInt2Status(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, self.MPU6050_DMPINT_2_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, MPU6050_DMPINT_2_BIT)
         
     def getDMPInt1Status(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, self.MPU6050_DMPINT_1_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, MPU6050_DMPINT_1_BIT)
         
     def getDMPInt0Status(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, self.MPU6050_DMPINT_0_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_DMP_INT_STATUS, MPU6050_DMPINT_0_BIT)
         
     def getIntPLLReadyStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, self.MPU6050_INTERRUPT_PLL_RDY_INT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_PLL_RDY_INT_BIT)
         
     def getIntDMPStatus(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, self.MPU6050_INTERRUPT_DMP_INT_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_DMP_INT_BIT)
         
     def getDMPEnabled(self):
-        return self.i2c.readBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_DMP_EN_BIT)
+        return self.i2c.readBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_DMP_EN_BIT)
 
     def setDMPEnabled(self, status):
-        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_DMP_EN_BIT, status)
+        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_DMP_EN_BIT, status)
     
     def resetDMP(self):
-        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, self.MPU6050_USERCTRL_DMP_RESET_BIT, True)
+        self.i2c.writeBit(self.addr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_DMP_RESET_BIT, True)
         
     def setMemoryBank(self, bank, prefetchEnabled = False, userBank = False):
         bank &= 0x1F
@@ -1570,15 +1561,15 @@ class MPU6050:
         self.setI2CBypassEnabled(True)
         
         # load DMP code into memory banks
-        self.writeMemoryBlock(self.dmpMemory, self.MPU6050_DMP_CODE_SIZE, 0, 0, False)
+        self.writeMemoryBlock(self.dmpMemory, MPU6050_DMP_CODE_SIZE, 0, 0, False)
         #print('Success! DMP code written and verified')
         
         # write DMP configuration
-        self.writeDMPConfigurationSet(self.dmpConfig, self.MPU6050_DMP_CONFIG_SIZE, 0, 0, False)
+        self.writeDMPConfigurationSet(self.dmpConfig, MPU6050_DMP_CONFIG_SIZE, 0, 0, False)
         #print('Success! DMP configuration written and verified')
         
         # Setting clock source to Z Gyro
-        self.setClockSource(self.MPU6050_CLOCK_PLL_ZGYRO)
+        self.setClockSource(MPU6050_CLOCK_PLL_ZGYRO)
         
         # Setting DMP and FIFO_OFLOW interrupts enabled
         self.setIntEnabled(0x12)
@@ -1587,13 +1578,13 @@ class MPU6050:
         self.setRate(4) # 1khz / (1 + 4) = 200 Hz [9 = 100 Hz]
         
         # Setting external frame sync to TEMP_OUT_L[0]
-        self.setExternalFrameSync(self.MPU6050_EXT_SYNC_TEMP_OUT_L)
+        self.setExternalFrameSync(MPU6050_EXT_SYNC_TEMP_OUT_L)
         
         # Setting DLPF bandwidth to 42Hz
-        self.setDLPFMode(self.MPU6050_DLPF_BW_42)
+        self.setDLPFMode(MPU6050_DLPF_BW_42)
         
         # Setting gyro sensitivity to +/- 2000 deg/sec
-        self.setFullScaleGyroRange(self.MPU6050_GYRO_FS_2000)
+        self.setFullScaleGyroRange(MPU6050_GYRO_FS_2000)
         
         # Setting DMP configuration bytes (function unknown)
         self.setDMPConfig1(0x03)
