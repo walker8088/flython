@@ -139,8 +139,8 @@ class I2C:
     def write_byte(self, addr, data):
             return self.bus.write_byte(addr, data)
                    
-    def read_block(self, addr, reg):
-            return self.bus.read_i2c_block_data(addr, reg)
+    def read_block(self, addr, reg, len):
+            return self.bus.read_i2c_block_data(addr, reg, len)
      
     def write_block(self, addr, reg, data):
             return self.bus.write_i2c_block_data(addr, reg, data)
