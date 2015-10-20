@@ -153,5 +153,4 @@ if __name__=='__main__':
     
     while(True):
         print sensor.read_all()[:2]
-        #print "Temperature(C): %.6f" % (baro.temp), "Pressure(millibar): %.6f" % (baro.press)
         time.sleep(0.1)

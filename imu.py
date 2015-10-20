@@ -1,24 +1,15 @@
 import time
 
-from bitify.python.sensors.adxl345 import ADXL345
-from bitify.python.sensors.l3g4200d import L3G4200D
-from bitify.python.sensors.hmc5883l import HMC5883L
-
 class IMU(object):
     
     K = 0.98
     K1 = 1 - K
     
-    def __init__(self, bus, gyro_address, accel_address, compass_address, name, gyro_scale=L3G4200D.FS_2000, accel_scale=ADXL345.AFS_16g):
-        self.bus = bus
-        self.gyro_address = gyro_address 
-        self.accel_address = accel_address
-        self.name = name
-        self.gyro_scale = gyro_scale 
-        self.accel_scale = accel_scale
-        self.accelerometer = ADXL345(bus, accel_address, name + "-accelerometer", accel_scale)
-        self.gyroscope = L3G4200D(bus, gyro_address, name + "-gyroscope", gyro_scale)
-        self.compass = HMC5883L(bus, compass_address, name + "-compass")
+    def __init__(self, gyro, accel, compass):
+
+        self.accel = accel
+        self.gyro = gyro
+        self.compass = compass)
 
         self.last_time = time.time()
         self.time_diff = 0
@@ -34,19 +25,19 @@ class IMU(object):
 
     def read_all(self):
         '''Return pitch and roll in radians and the scaled x, y & z values from the gyroscope and accelerometer'''
-        self.gyroscope.read_raw_data()
-        self.accelerometer.read_raw_data()
+        self.gyro.read_raw_data()
+        self.accel.read_raw_data()
         
-        self.gyro_scaled_x = self.gyroscope.read_scaled_gyro_x()
-        self.gyro_scaled_y = self.gyroscope.read_scaled_gyro_y()
-        self.gyro_scaled_z = self.gyroscope.read_scaled_gyro_z()
+        self.gyro_scaled_x = self.gyro.gyro_scaled_x
+        self.gyro_scaled_y = self.gyro.gyro_scaled_y
+        self.gyro_scaled_z = self.gyro.gyro_scaled_z
         
-        self.accel_scaled_x = self.accelerometer.read_scaled_accel_x()
-        self.accel_scaled_y = self.accelerometer.read_scaled_accel_y()
-        self.accel_scaled_z = self.accelerometer.read_scaled_accel_z()
+        self.accel_scaled_x = self.accel.accel_scaled_x
+        self.accel_scaled_y = self.accel.accel_scaled_y
+        self.accel_scaled_z = self.accel.accel_scaled_z
         
-        self.rotation_x = self.accelerometer.read_x_rotation(self.accel_scaled_x, self.accel_scaled_y, self.accel_scaled_z)
-        self.rotation_y = self.accelerometer.read_y_rotation(self.accel_scaled_x, self.accel_scaled_y, self.accel_scaled_z)
+        self.rotation_x = self.accel_scaled_x
+        self.rotation_y = self.accel_scaled_y
         
         now = time.time()
         self.time_diff = now - self.last_time
@@ -56,7 +47,7 @@ class IMU(object):
         # return (self.pitch, self.roll, self.gyro_scaled_x, self.gyro_scaled_y, self.gyro_scaled_z, self.accel_scaled_x, self.accel_scaled_y, self.accel_scaled_z)
         return (self.pitch, self.roll, self.gyro_scaled_x, self.gyro_scaled_y, self.gyro_scaled_z, self.accel_scaled_x, self.accel_scaled_y, self.accel_scaled_z)
         
-    def read_x_rotation(self, x, y, z):
+    def read_x_rotation(self, x, y, z):   
         return self.rotation_x
 
     def read_y_rotation(self, x, y, z):

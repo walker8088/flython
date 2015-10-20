@@ -1,7 +1,5 @@
 import math
 
-import bitify.python.utils.i2cutils as I2CUtils
-
 class HMC5883L(object):
     '''
     Simple HMC5883L implementation
@@ -35,8 +33,8 @@ class HMC5883L(object):
                  }
 
 
-    def __init__(self, bus, address, name, samples=3, rate=4, gain=1, sampling_mode=0, x_offset=0, y_offset=0, z_offset=0):
-        self.bus = bus
+    def __init__(self, i2c, address, name, samples=3, rate=4, gain=1, sampling_mode=0, x_offset=0, y_offset=0, z_offset=0):
+        self.i2c = i2c
         self.address = address
         self.name = name
         self.samples = samples
@@ -49,14 +47,14 @@ class HMC5883L(object):
         
         # Set the number of samples
         conf_a = (samples << 5) + (rate << 2)
-        I2CUtils.i2c_write_byte(self.bus, self.address, HMC5883L.CONF_REG_A, conf_a)
+        self.i2c.write_byte_data(self.address, HMC5883L.CONF_REG_A, conf_a)
         
         # Set the gain
         conf_b = gain << 5
-        I2CUtils.i2c_write_byte(self.bus, self.address, HMC5883L.CONF_REG_B, conf_b)
+        self.i2c.write_byte_data(self.address, HMC5883L.CONF_REG_B, conf_b)
 
         # Set the operation mode
-        I2CUtils.i2c_write_byte(self.bus, self.address, HMC5883L.MODE_REG, self.sampling_mode)        
+        self.i2c.write_byte_data(self.address, HMC5883L.MODE_REG, self.sampling_mode)        
 
         self.raw_data = [0, 0, 0, 0, 0, 0]
         
@@ -67,10 +65,10 @@ class HMC5883L(object):
         '''
         Read the raw data from the sensor, scale it appropriately and store for later use
         '''
-        self.raw_data = I2CUtils.i2c_read_block(self.bus, self.address, HMC5883L.DATA_START_BLOCK, 6)
-        self.raw_x = I2CUtils.twos_compliment(self.raw_data[HMC5883L.DATA_XOUT_H], self.raw_data[HMC5883L.DATA_XOUT_L]) - self.x_offset
-        self.raw_y = I2CUtils.twos_compliment(self.raw_data[HMC5883L.DATA_YOUT_H], self.raw_data[HMC5883L.DATA_YOUT_L]) - self.y_offset
-        self.raw_z = I2CUtils.twos_compliment(self.raw_data[HMC5883L.DATA_ZOUT_H], self.raw_data[HMC5883L.DATA_ZOUT_L]) - self.z_offset
+        self.raw_data = self.i2c.read_block(self.address, HMC5883L.DATA_START_BLOCK, 6)
+        self.raw_x = twos_compliment(self.raw_data[HMC5883L.DATA_XOUT_H], self.raw_data[HMC5883L.DATA_XOUT_L]) - self.x_offset
+        self.raw_y = twos_compliment(self.raw_data[HMC5883L.DATA_YOUT_H], self.raw_data[HMC5883L.DATA_YOUT_L]) - self.y_offset
+        self.raw_z = twos_compliment(self.raw_data[HMC5883L.DATA_ZOUT_H], self.raw_data[HMC5883L.DATA_ZOUT_L]) - self.z_offset
     
         self.scaled_x = self.raw_x * HMC5883L.GAIN_SCALE[self.gain][2]
         self.scaled_y = self.raw_y * HMC5883L.GAIN_SCALE[self.gain][2]
