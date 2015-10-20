@@ -54,11 +54,9 @@ class Fusion(object):
         return degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
             self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
 
-    def update_nomag(self, accel, gyro):    # 3-tuples (x, y, z) for accel, gyro
+    def update_nomag(self, accel, gyro, deltat):    # 3-tuples (x, y, z) for accel, gyro
         ax, ay, az = accel                  # Units G (but later normalised)
         gx, gy, gz = (radians(x) for x in gyro) # Units deg/s
-        if self.start_time is None:
-            self.start_time = pyb.micros()  # First run
         q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
         # Auxiliary variables to avoid repeated arithmetic
         _2q1 = 2 * q1
@@ -102,8 +100,7 @@ class Fusion(object):
         qDot4 = 0.5 * (q1 * gz + q2 * gy - q3 * gx) - self.beta * s4
 
         # Integrate to yield quaternion
-        deltat = pyb.elapsed_micros(self.start_time) / 1000000
-        self.start_time = pyb.micros()
+        
         q1 += qDot1 * deltat
         q2 += qDot2 * deltat
         q3 += qDot3 * deltat
@@ -111,12 +108,10 @@ class Fusion(object):
         norm = 1 / sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4)    # normalise quaternion
         self.q = q1 * norm, q2 * norm, q3 * norm, q4 * norm
 
-    def update(self, accel, gyro, mag):     # 3-tuples (x, y, z) for accel, gyro and mag data
+    def update(self, accel, gyro, mag, deltat):     # 3-tuples (x, y, z) for accel, gyro and mag data
         mx, my, mz = (mag[x] - self.magbias[x] for x in range(3)) # Units irrelevant (normalised)
         ax, ay, az = accel                  # Units irrelevant (normalised)
         gx, gy, gz = (radians(x) for x in gyro)  # Units deg/s
-        if self.start_time is None:
-            self.start_time = pyb.micros()  # First run
         q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
         # Auxiliary variables to avoid repeated arithmetic
         _2q1 = 2 * q1
@@ -197,8 +192,6 @@ class Fusion(object):
         qDot4 = 0.5 * (q1 * gz + q2 * gy - q3 * gx) - self.beta * s4
 
         # Integrate to yield quaternion
-        deltat = pyb.elapsed_micros(self.start_time) / 1000000
-        self.start_time = pyb.micros()
         q1 += qDot1 * deltat
         q2 += qDot2 * deltat
         q3 += qDot3 * deltat

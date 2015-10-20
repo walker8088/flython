@@ -81,14 +81,16 @@ class MPU6050(object):
         
         self.pitch = 0.0
         self.roll = 0.0
-        
+    
+    def init(self):    
         # We need to wake up the module as it start in sleep mode
         self.i2c.write8(self.address, MPU6050.PWR_MGMT_1, 0)
         # Set the gryo resolution
         self.i2c.write8(self.address, MPU6050.FS_SEL, self.fs_scale << 3)
         # Set the accelerometer resolution
         self.i2c.write8(self.address, MPU6050.AFS_SEL, self.afs_scale << 3)
-           
+        #TODO bypass mode
+	   
     def read_raw_data(self):
         '''
         Read the raw data from the sensor, scale it appropriately and store for later use
@@ -129,7 +131,7 @@ class MPU6050(object):
         '''Returns the rotation around the Y axis in radians'''
         return -math.atan2(x, math.sqrt((y * y) + (z * z)))
         
-    def read_all(self):
+    def update(self):
         '''Return pitch and roll in radians and the scaled x, y & z values from the gyroscope and accelerometer'''
         self.read_raw_data()
         return (self.pitch, self.roll, self.gyro_scaled_x, self.gyro_scaled_y, self.gyro_scaled_z, self.accel_scaled_x, self.accel_scaled_y, self.accel_scaled_z)
@@ -147,5 +149,5 @@ if __name__=='__main__':
     #sensor.initialize()
     
     while(True):
-        print sensor.read_all()[:2]
+        print sensor.update()[:2]
         time.sleep(0.1)

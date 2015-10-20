@@ -36,33 +36,37 @@ class HMC5883L(object):
                  }
 
 
-    def __init__(self, i2c, address, samples=3, rate=4, gain=1, sampling_mode=0):
+    def __init__(self, i2c, samples=3, rate=4, gain=1, sampling_mode=0):
         self.i2c = i2c
-        self.address = address
+        self.address = 0x1e
         self.samples = samples
+	self.rate = rate
         self.gain = gain
         self.sampling_mode = sampling_mode
         
         self.x_offset = 0
         self.y_offset = 0
         self.z_offset = 0
-        
-        # Set the number of samples
-        conf_a = (samples << 5) + (rate << 2)
+            
+    def init(self):
+         # Set the number of samples
+        conf_a = (self.samples << 5) + (self.rate << 2)
         self.i2c.write_byte_data(self.address, HMC5883L.CONF_REG_A, conf_a)
-        
+
         # Set the gain
-        conf_b = gain << 5
+        conf_b = self.gain << 5
         self.i2c.write_byte_data(self.address, HMC5883L.CONF_REG_B, conf_b)
 
         # Set the operation mode
-        self.i2c.write_byte_data(self.address, HMC5883L.MODE_REG, self.sampling_mode)        
+        self.i2c.write_byte_data(self.address, HMC5883L.MODE_REG, self.sampling_mode)
 
-        self.raw_data = [0, 0, 0, 0, 0, 0]
-        
         # Now read all the values as the first read after a gain change returns the old value
         self.read_raw_data()
-    
+
+    def update(self):
+	self.read_raw_data()
+	return (self.scaled_x, self.scaled_y, self.scaled_z) 
+
     def read_raw_data(self):
         '''
         Read the raw data from the sensor, scale it appropriately and store for later use
@@ -113,3 +117,15 @@ class HMC5883L(object):
         self.y_offset = y_offset
         self.z_offset = z_offset
     
+if __name__=='__main__':
+    import sys,time
+    sys.path.append('..')
+    from bus import I2C
+    i2c = I2C(1)
+    sensor = HMC5883L(i2c)
+    #sensor.initialize()
+    while True:
+        sensor.read_raw_data()
+        print sensor.scaled_x, sensor.scaled_y, sensor.scaled_z 
+	time.sleep(0.5)
+	    

@@ -75,7 +75,7 @@ class MS5611 :
 		self.temp = 0.0 # Calculated temperature
 		self.press = 0.0 # Calculated Pressure
 
-	def initialize(self):
+	def init(self):
 		## The MS6511 Sensor stores 6 values in the EPROM memory that we need in order to calculate the actual temperature and pressure
 		## These values are calculated/stored at the factory when the sensor is calibrated.
 		##      I probably could have used the read word function instead of the whole block, but I wanted to keep things consistent.
@@ -148,6 +148,8 @@ class MS5611 :
 		self.readTemperature()
 
 		self.calculatePressureAndTemperature()
+		
+		return (self.temp, self.press) 
     	
     	def altitude(self):
         	'''
@@ -164,7 +166,7 @@ if __name__=='__main__':
 
     i2c = I2C(1)
     baro = MS5611(i2c)
-    baro.initialize()
+    baro.init()
 
     while(True):
         baro.update()
