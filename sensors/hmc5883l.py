@@ -1,4 +1,7 @@
+
 import math
+
+from utils import *
 
 class HMC5883L(object):
     '''
@@ -33,17 +36,16 @@ class HMC5883L(object):
                  }
 
 
-    def __init__(self, i2c, address, name, samples=3, rate=4, gain=1, sampling_mode=0, x_offset=0, y_offset=0, z_offset=0):
+    def __init__(self, i2c, address, samples=3, rate=4, gain=1, sampling_mode=0):
         self.i2c = i2c
         self.address = address
-        self.name = name
         self.samples = samples
         self.gain = gain
         self.sampling_mode = sampling_mode
         
-        self.x_offset = x_offset
-        self.y_offset = y_offset
-        self.z_offset = z_offset
+        self.x_offset = 0
+        self.y_offset = 0
+        self.z_offset = 0
         
         # Set the number of samples
         conf_a = (samples << 5) + (rate << 2)
@@ -111,22 +113,3 @@ class HMC5883L(object):
         self.y_offset = y_offset
         self.z_offset = z_offset
     
-    def read_raw_x(self):
-        return self.raw_x
-    
-    def read_raw_y(self):
-        return self.raw_y
-    
-    def read_raw_z(self):
-        return self.raw_z
-
-    def read_scaled_x(self):
-        return self.scaled_x
-
-    def read_scaled_y(self):
-        return self.scaled_y
-
-    def read_scaled_z(self):
-        return self.scaled_z
-    
-
