@@ -78,21 +78,20 @@ class MS5611 :
 	def init(self):
 		## The MS6511 Sensor stores 6 values in the EPROM memory that we need in order to calculate the actual temperature and pressure
 		## These values are calculated/stored at the factory when the sensor is calibrated.
-		##      I probably could have used the read word function instead of the whole block, but I wanted to keep things consistent.
-		C1 = self.i2c.read_i2c_block_data(self.address, MS5611_RA_C1) #Pressure Sensitivity
-		C2 = self.i2c.read_i2c_block_data(self.address, MS5611_RA_C2) #Pressure Offset
-		C3 = self.i2c.read_i2c_block_data(self.address, MS5611_RA_C3) #Temperature coefficient of pressure sensitivity
-		C4 = self.i2c.read_i2c_block_data(self.address, MS5611_RA_C4) #Temperature coefficient of pressure offset
-		C5 = self.i2c.read_i2c_block_data(self.address, MS5611_RA_C5) #Reference temperature
-		C6 = self.i2c.read_i2c_block_data(self.address, MS5611_RA_C6) #Temperature coefficient of the temperature
+		C1 = self.i2c.read_reg_block(self.address, MS5611_RA_C1) #Pressure Sensitivity
+		C2 = self.i2c.read_reg_block(self.address, MS5611_RA_C2) #Pressure Offset
+		C3 = self.i2c.read_reg_block(self.address, MS5611_RA_C3) #Temperature coefficient of pressure sensitivity
+		C4 = self.i2c.read_reg_block(self.address, MS5611_RA_C4) #Temperature coefficient of pressure offset
+		C5 = self.i2c.read_reg_block(self.address, MS5611_RA_C5) #Reference temperature
+		C6 = self.i2c.read_reg_block(self.address, MS5611_RA_C6) #Temperature coefficient of the temperature
 
 		## Again here we are converting the 2 8bit packages into a single decimal
-		self.C1 = C1[0] * 256.0 + C1[1]
-		self.C2 = C2[0] * 256.0 + C2[1]
-		self.C3 = C3[0] * 256.0 + C3[1]
-		self.C4 = C4[0] * 256.0 + C4[1]
-		self.C5 = C5[0] * 256.0 + C5[1]
-		self.C6 = C6[0] * 256.0 + C6[1]
+                self.C1 = C1[0] * 256 + C1[1]
+		self.C2 = C2[0] * 256 + C2[1]
+		self.C3 = C3[0] * 256 + C3[1]
+		self.C4 = C4[0] * 256 + C4[1]
+		self.C5 = C5[0] * 256 + C5[1]
+		self.C6 = C6[0] * 256 + C6[1]
 
 		self.update()
 
@@ -103,12 +102,12 @@ class MS5611 :
 		self.i2c.write_byte(self.address, OSR)
 
 	def readPressure(self):
-		D1 = self.i2c.read_i2c_block_data(self.address, MS5611_RA_ADC)
-		self.D1 = D1[0] * 65536 + D1[1] * 256.0 + D1[2]
+		D1 = self.i2c.read_reg_block(self.address, MS5611_RA_ADC)
+		self.D1 = D1[0] * 65536.0 + D1[1] * 256 + D1[2]
 
 	def readTemperature(self):
-		D2 = self.i2c.read_i2c_block_data(self.address, MS5611_RA_ADC)
-		self.D2 = D2[0] * 65536 + D2[1] * 256.0 + D2[2]
+		D2 = self.i2c.read_reg_block(self.address, MS5611_RA_ADC)
+		self.D2 = D2[0] * 65536.0 + D2[1] * 256 + D2[2]
 
 	def calculatePressureAndTemperature(self):
         
@@ -137,7 +136,7 @@ class MS5611 :
 
                 self.temp  =  TEMP / 100 # Temperature updated
                 self.press = PRES / 100 # Pressure updated
-                
+		
 	def update(self):
 		self.refreshPressure()
 		time.sleep(0.01) # Waiting for pressure data ready
@@ -149,13 +148,12 @@ class MS5611 :
 
 		self.calculatePressureAndTemperature()
 		
-		return (self.temp, self.press) 
+		return (self.press, self.temp) 
     	
-    	def altitude(self):
-        	'''
-        	Altitude in m.
-        	'''
-                return  -7990.0*math.log(self.press/101325.0)
+
+def pt2altitude(press, temp):
+        #return ((math.pow((101325.0 / press), 1/5.257) - 1.0) * (temp + 273.15)) / 0.0065
+	return 
 
 if __name__=='__main__':
     
@@ -168,11 +166,25 @@ if __name__=='__main__':
     baro = MS5611(i2c)
     baro.init()
 
+    presss = []
+    temps = []	
+    for i in range(100) :
+	press, temp = baro.update()
+	presss.append(press)
+	temps.append(temp)
+   	time.sleep(0.01)
+
+    press_base = sum(presss)/len(presss) 
+    temp_base = sum(temps)/len(temps)
+    altitude_base = pt2altitude(press_base, temp_base)
+    print press_base, temp_base, altitude_base
+
     while(True):
         baro.update()
-        baro.calculatePressureAndTemperature()
 
         print "Temperature(C): %.6f" % (baro.temp), "Pressure(millibar): %.6f" % (baro.press)
-	print baro.altitude()
+	scaling = baro.press / press_base
+        altitude_diff = 153.8462 * (temp_base + 273.15) * (1.0 - math.exp(0.190259 * math.log(scaling)))
+	print "%.3f" % altitude_diff
 
-        time.sleep(0.5)
+        time.sleep(0.1)

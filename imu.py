@@ -34,12 +34,13 @@ class IMU(object):
     def update(self): 
 	self.read_all()
 	self.fusion.update(self.accel_xyz, self.gyro_xyz, self.compass_xyz, 0.01)
-	
+	self.baro.update()
+
     def read_all(self):
         '''Return pitch and roll in radians and the scaled x, y & z values from the gyroscope and accelerometer'''
         self.gyro_accel.read_raw_data()
 	self.compass.read_raw_data()
-
+       
         self.gyro_xyz = (self.gyro_accel.gyro_scaled_x, self.gyro_accel.gyro_scaled_y, self.gyro_accel.gyro_scaled_z)
         self.accel_xyz = (self.gyro_accel.accel_scaled_x, self.gyro_accel.accel_scaled_y, self.gyro_accel.accel_scaled_z)
 	self.compass_xyz = (self.compass.scaled_x, self.compass.scaled_y, self.compass.scaled_z)

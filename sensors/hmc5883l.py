@@ -49,16 +49,21 @@ class HMC5883L(object):
         self.z_offset = 0
             
     def init(self):
+        #ugly hack here, cause hmmc5883l slave to mpu6050
+        self.i2c.write_reg_byte(0x68, 0x6A, 0);
+	self.i2c.write_reg_byte(0x68, 0x37, 2);
+	self.i2c.write_reg_byte(0x68, 0x6B, 0);
+ 
          # Set the number of samples
         conf_a = (self.samples << 5) + (self.rate << 2)
-        self.i2c.write_byte_data(self.address, HMC5883L.CONF_REG_A, conf_a)
+        self.i2c.write_reg_byte(self.address, HMC5883L.CONF_REG_A, conf_a)
 
         # Set the gain
         conf_b = self.gain << 5
-        self.i2c.write_byte_data(self.address, HMC5883L.CONF_REG_B, conf_b)
+        self.i2c.write_reg_byte(self.address, HMC5883L.CONF_REG_B, conf_b)
 
         # Set the operation mode
-        self.i2c.write_byte_data(self.address, HMC5883L.MODE_REG, self.sampling_mode)
+        self.i2c.write_reg_byte(self.address, HMC5883L.MODE_REG, self.sampling_mode)
 
         # Now read all the values as the first read after a gain change returns the old value
         self.read_raw_data()
@@ -71,7 +76,7 @@ class HMC5883L(object):
         '''
         Read the raw data from the sensor, scale it appropriately and store for later use
         '''
-        self.raw_data = self.i2c.read_block(self.address, HMC5883L.DATA_START_BLOCK, 6)
+        self.raw_data = self.i2c.read_reg_block(self.address, HMC5883L.DATA_START_BLOCK)
         self.raw_x = twos_compliment(self.raw_data[HMC5883L.DATA_XOUT_H], self.raw_data[HMC5883L.DATA_XOUT_L]) - self.x_offset
         self.raw_y = twos_compliment(self.raw_data[HMC5883L.DATA_YOUT_H], self.raw_data[HMC5883L.DATA_YOUT_L]) - self.y_offset
         self.raw_z = twos_compliment(self.raw_data[HMC5883L.DATA_ZOUT_H], self.raw_data[HMC5883L.DATA_ZOUT_L]) - self.z_offset
@@ -80,23 +85,20 @@ class HMC5883L(object):
         self.scaled_y = self.raw_y * HMC5883L.GAIN_SCALE[self.gain][2]
         self.scaled_z = self.raw_z * HMC5883L.GAIN_SCALE[self.gain][2]
 
-    def read_bearing(self):
+    def bearing(self):
         '''
         Read a bearing from the sensor assuming the sensor is level
         '''
-        self.read_raw_data()
-
-        bearing = math.atan2(self.read_scaled_y(), self.read_scaled_x())
+        bearing = math.atan2(self.scaled_y, self.scaled_x)
         if bearing < 0:
             return bearing + (HMC5883L.TWO_PI)
         else:
             return bearing
 
-    def read_compensated_bearing(self, pitch, roll):
+    def compensated_bearing(self, pitch, roll):
         '''
         Calculate a bearing taking in to account the current pitch and roll of the device as supplied as parameters
         '''
-        self.read_raw_data()
         cos_pitch = (math.cos(pitch))
         sin_pitch = (math.sin(pitch))
         
@@ -123,9 +125,10 @@ if __name__=='__main__':
     from bus import I2C
     i2c = I2C(1)
     sensor = HMC5883L(i2c)
-    #sensor.initialize()
+    sensor.init()
     while True:
-        sensor.read_raw_data()
+        sensor.update()
         print sensor.scaled_x, sensor.scaled_y, sensor.scaled_z 
+	print sensor.bearing()* 180 / math.pi
 	time.sleep(0.5)
 	    
