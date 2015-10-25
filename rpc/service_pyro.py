@@ -19,10 +19,12 @@ class IMUSensors(object):
 	self.hmc5883.update()
 	return ((self.mpu6050.accel_scaled_x, self.mpu6050.accel_scaled_y,self.mpu6050.accel_scaled_z),
                 (self.mpu6050.gyro_scaled_x, self.mpu6050.gyro_scaled_y, self.mpu6050.gyro_scaled_z),
-                (self.hmc588_x, self.hmc5883.scaled_y, self.hmc5883.scaled_z) ) 
+                (self.hmc5883.scaled_x, self.hmc5883.scaled_y, self.hmc5883.scaled_z) ) 
 
+nameserver = Pyro4.locateNS()
 daemon = Pyro4.Daemon()                
 uri = daemon.register(IMUSensors)   
+nameserver.register("IMUSensors", uri)
 
 print("Ready. Object uri =", uri)      
 daemon.requestLoop()                
