@@ -26,7 +26,7 @@ class IMUSensorsService(rpyc.Service):
 	self.hmc5883.init()
 
     def exposed_update(self):
-        self.mpu6050.update()
+	self.mpu6050.update()
 	self.hmc5883.update()
 	return (self.mpu6050.accel_scaled_x, self.mpu6050.accel_scaled_y,self.mpu6050.accel_scaled_z,
                 self.mpu6050.gyro_scaled_x, self.mpu6050.gyro_scaled_y, self.mpu6050.gyro_scaled_z,
