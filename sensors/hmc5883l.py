@@ -1,5 +1,5 @@
 
-from math import sin, cos, atan2, pi 
+from math import sin, cos, atan2, pi, degrees 
 
 from utils import *
 
@@ -73,11 +73,11 @@ class HMC5883L(object):
         '''
         Read the raw data from the sensor, scale it appropriately and store for later use
         '''
-        self.raw_data = self.i2c.read_reg_block(self.address, HMC5883L_DATA_START_BLOCK)
+        raw_data = self.i2c.read_reg_block(self.address, HMC5883L_DATA_START_BLOCK)
 
-        self.raw_x = bytes_to_int(self.raw_data[HMC5883L_DATA_XOUT_H], self.raw_data[HMC5883L_DATA_XOUT_L]) - self.x_offset
-        self.raw_y = bytes_to_int(self.raw_data[HMC5883L_DATA_YOUT_H], self.raw_data[HMC5883L_DATA_YOUT_L]) - self.y_offset
-        self.raw_z = bytes_to_int(self.raw_data[HMC5883L_DATA_ZOUT_H], self.raw_data[HMC5883L_DATA_ZOUT_L]) - self.z_offset
+        self.raw_x = bytes_to_int(raw_data[HMC5883L_DATA_XOUT_H], raw_data[HMC5883L_DATA_XOUT_L]) - self.x_offset
+        self.raw_y = bytes_to_int(raw_data[HMC5883L_DATA_YOUT_H], raw_data[HMC5883L_DATA_YOUT_L]) - self.y_offset
+        self.raw_z = bytes_to_int(raw_data[HMC5883L_DATA_ZOUT_H], raw_data[HMC5883L_DATA_ZOUT_L]) - self.z_offset
         
         gain_value = HMC5883L_GAIN_SCALE[self.gain][2] 
         self.compass_x = self.raw_x * gain_value
@@ -109,7 +109,7 @@ class HMC5883L(object):
         
         bearing = atan2(Yh, Xh)
         if bearing < 0:
-            return bearing + TWO_PI
+            return bearing + pi * 2 
         else:
             return bearing
     
@@ -127,7 +127,7 @@ if __name__=='__main__':
     sensor.init()
     while True:
         sensor.update()
-        print sensor.compass_x, sensor.compass_y, sensor.compass_z 
-	print sensor.bearing()* 180 / pi
+        #print sensor.compass_x, sensor.compass_y, sensor.compass_z 
+	print degrees(sensor.bearing())
 	time.sleep(0.5)
 	    

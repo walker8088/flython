@@ -8,12 +8,14 @@ User should repeatedly call the appropriate 6 or 9 DOF update method and extract
 required.
 '''
 
-class Fusion(object):
+class QuadFusion(object):
     '''
     Class provides sensor fusion allowing heading, pitch and roll to be extracted. This uses the Madgwick algorithm.
     The update method must be called peiodically. The calculations take 1.6mS on the Pyboard.
     '''
+    
     declination = 0                         # Optional offset for true north. A +ve value adds to heading
+    
     def __init__(self):
         self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
@@ -21,21 +23,21 @@ class Fusion(object):
 
     @property
     def heading(self):
-        return self.declination + degrees(atan2(2.0 * (self.q[1] * self.q[2] + self.q[0] * self.q[3]),
-            self.q[0] * self.q[0] + self.q[1] * self.q[1] - self.q[2] * self.q[2] - self.q[3] * self.q[3]))
+        return self.declination + atan2(2.0 * (self.q[1] * self.q[2] + self.q[0] * self.q[3]),
+            self.q[0] * self.q[0] + self.q[1] * self.q[1] - self.q[2] * self.q[2] - self.q[3] * self.q[3])
 
     @property
     def pitch(self):
-        return degrees(-asin(2.0 * (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
+        return -asin(2.0 * (self.q[1] * self.q[3] - self.q[0] * self.q[2]))
 
     @property
     def roll(self):
-        return degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
-            self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
+        return atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
+            self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3])
 
     def update_nomag(self, accel, gyro, time_dt):    # 3-tuples (x, y, z) for accel, gyro
         ax, ay, az = accel                  # Units G (but later normalised)
-        gx, gy, gz = (radians(x) for x in gyro) # Units deg/s
+        gx, gy, gz = gyro                   
         q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
         # Auxiliary variables to avoid repeated arithmetic
         _2q1 = 2 * q1
@@ -89,9 +91,9 @@ class Fusion(object):
         self.q = q1 * norm, q2 * norm, q3 * norm, q4 * norm
 
     def update(self, accel, gyro, mag, time_dt):     # 3-tuples (x, y, z) for accel, gyro and mag data
-        mx, my, mz = (mag[x] - self.magbias[x] for x in range(3)) # Units irrelevant (normalised)
+        mx, my, mz = mag                    # Units irrelevant (normalised)
         ax, ay, az = accel                  # Units irrelevant (normalised)
-        gx, gy, gz = (radians(x) for x in gyro)  # Units deg/s
+        gx, gy, gz = gyro                   # Units deg/s
         q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
         # Auxiliary variables to avoid repeated arithmetic
         _2q1 = 2 * q1

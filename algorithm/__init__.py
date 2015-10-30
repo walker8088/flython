@@ -1,2 +1,3 @@
 from pid import *
-from fusion import *
+from quad import *
+from dcm import *
