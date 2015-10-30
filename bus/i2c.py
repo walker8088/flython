@@ -101,17 +101,8 @@ class I2C:
     def writeList(self, addr, reg, list):
         # Writes an array of bytes using I2C format"
         self.bus.write_i2c_block_data(addr, reg, list)
-        
-    def write8(self, addr, reg, value):
-        # Writes an 8-bit value to the specified register/address
-        self.bus.write_byte_data(addr, reg, value)
-        
-    def readU8(self, addr, reg):
-            # Read an unsigned byte from the I2C device
-            result = self.bus.read_byte_data(addr, reg)
-            return result
-        
-    def readS8(self, addr, reg):
+                
+    def read_int_8(self, addr, reg):
             # Reads a signed byte from the I2C device
             result = self.bus.read_byte_data(addr, reg)
             if result > 127:
@@ -151,9 +142,9 @@ class I2C:
     def write_reg_block(self, addr, req, data):
 	return self.bus.write_i2c_block_data(self, addr, req, data)
 
-    def read_block(self, addr, reg, len):
-            return self.bus.read_i2c_block_data(addr, reg, len)
+    #def read_block(self, addr, reg, len):
+    #        return self.bus.read_i2c_block_data(addr, reg, len)
      
-    def write_block(self, addr, reg, data):
-            return self.bus.write_i2c_block_data(addr, reg, data)
+    #def write_block(self, addr, reg, data):
+    #        return self.bus.write_i2c_block_data(addr, reg, data)
                    

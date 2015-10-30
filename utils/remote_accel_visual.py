@@ -10,7 +10,8 @@ import rpyc
 
 from visual import *
 
-IMU_HOST = '10.19.1.152'
+#IMU_HOST = '10.19.1.152'
+IMU_HOST = '192.168.0.108'
 
 grad2rad = 3.141592/180.0
 
@@ -78,20 +79,37 @@ raw_imu.init()
 
 filter = 0.1
 
-accel_x = 0
-accel_y = 0
-accel_z = 0
+accel_x = 0.0
+accel_y = 0.0
+accel_z = 0.0
+
+roll = 0.0
+pitch = 0.0
+yaw = 0.0
+fuse = 0.9
 
 while 1:
-	new_accel_x, new_accel_y, new_accel_z = raw_imu.update()[:3]
-
+	vals = raw_imu.update()
+	new_accel_x, new_accel_y, new_accel_z = vals[:3]
+        
+  
 	accel_x = new_accel_x * filter + accel_x * (1-filter)  
 	accel_y = new_accel_y * filter + accel_y * (1-filter)
 	accel_z = new_accel_z * filter + accel_z * (1-filter)
+	
+	time_dt = vals[9]
+	gyro_x = vals[3] * time_dt 
+	gyro_y = vals[4] * time_dt
+	gyro_z = vals[5] * time_dt
 
-	roll  = math.atan2(-accel_y, accel_z)
-    	pitch = math.atan2(accel_x, math.sqrt(accel_y*accel_y + accel_z * accel_z))
-	yaw = 0
+	#accel_roll  = math.atan2(-accel_y, accel_z)
+	accel_roll  = math.atan(-accel_y/math.sqrt(accel_x * accel_x + accel_z * accel_z))
+    	accel_pitch = math.atan2(accel_x, math.sqrt(accel_y * accel_y + accel_z * accel_z))
+	accel_yaw = 0.0
+
+        roll = fuse * (roll + gyro_x) + (1-fuse) * accel_roll 
+        pitch = fuse * (pitch + gyro_y) + (1-fuse) * accel_pitch
+        yaw = fuse * (yaw + gyro_z) + (1-fuse) * accel_yaw
 
         roll_degree = roll / grad2rad
 	pitch_degree = pitch / grad2rad

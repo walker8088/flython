@@ -1011,49 +1011,9 @@ class MPU6050:
 
     def getIntDataReadyStatus(self):
         return self.i2c.readBit(self.addr, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_DATA_RDY_BIT)
-
-    def getMotion9(self):
-        # unknown
-        pass
-
-    def getMotion6(self):
-        pass
-
-    def getAcceleration(self):
-        pass
-        
-    def getAccelerationX(self):
-        pass
-        
-    def getAccelerationY(self):
-        pass
-        
-    def getAccelerationZ(self):
-        pass
-        
-    def getTemperature(self):
-        pass
-        
-    def getRotation(self):
-        pass
-        
-    def getRotationX(self):
-        pass
-        
-    def getRotationY(self):
-        pass
-     
-    def getRotationZ(self):
-        pass
       
     def getExternalSensorByte(self, position):
         return self.i2c.readU8(MPU6050_RA_EXT_SENS_DATA_00 + position)
-
-    def getExternalSensorWord(self, position):
-        pass
-
-    def getExternalSensorDWord(self, position):
-        pass
 
     def getXNegMotionDetected(self):
         return self.i2c.readBit(self.addr, MPU6050_RA_MOT_DETECT_STATUS, MPU6050_MOTION_MOT_XNEG_BIT)
@@ -1279,28 +1239,7 @@ class MPU6050:
      
     def setZFineGain(self, gain):
         self.i2c.write8(self.addr, MPU6050_RA_Z_FINE_GAIN, gain)
-    
-    def getXAccelOffset(self):
-        pass
-
-    def setXAccelOffset(self, offset):
-        pass
-
-    def getYAccelOffset(self):
-        pass
-
-    def setYAccelOffset(self, offset):
-        pass
-
-    def getZAccelOffset(self):
-        pass
-
-    def setZAccelOffset(self, offset):
-        pass
-
-    def getXGyroOffsetUser(self):
-        pass
-        
+       
     def setXGyroOffsetUser(self, value):
         self.i2c.write8(self.addr, MPU6050_RA_XG_OFFS_USRH, value >> 8)
         self.i2c.write8(self.addr, MPU6050_RA_XG_OFFS_USRL, value & 0xFF) 

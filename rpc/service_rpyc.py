@@ -3,8 +3,8 @@ import rpyc
 
 sys.path.append("..")
 
-from bus import *
-from sensors import *
+#from bus import *
+#from sensors import *
 
 class IMUSensorsService(rpyc.Service):
     
@@ -27,14 +27,15 @@ class IMUSensorsService(rpyc.Service):
 	self.last_time = time.time()
 
     def exposed_update(self):
+	return 0
 	self.mpu6050.update()
 	new_time = time.time()
 	time_passed = (new_time - self.last_time) * 1000
 	self.last_time = new_time
 	self.hmc5883.update()
-	return (self.mpu6050.accel_scaled_x, self.mpu6050.accel_scaled_y,self.mpu6050.accel_scaled_z,
-                self.mpu6050.gyro_scaled_x, self.mpu6050.gyro_scaled_y, self.mpu6050.gyro_scaled_z,
-                self.hmc5883.scaled_x, self.hmc5883.scaled_y, self.hmc5883.scaled_z, time_passed ) 
+	return (self.mpu6050.accel_x, self.mpu6050.accel_y,self.mpu6050.accel_z,
+                self.mpu6050.gyro_x, self.mpu6050.gyro_y, self.mpu6050.gyro_z,
+                self.hmc5883.compass_x, self.hmc5883.compass_y, self.hmc5883.compass_z, time_passed ) 
 
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer

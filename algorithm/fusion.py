@@ -6,13 +6,6 @@ Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DO
 Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
 User should repeatedly call the appropriate 6 or 9 DOF update method and extract heading pitch and roll angles as
 required.
-Calibrate method:
-The sensor should be slowly rotated around each orthogonal axis while this runs.
-arguments:
-getxyz must return current magnetometer (x, y, z) tuple from the sensor
-stopfunc (responding to time or user input) tells it to stop
-waitfunc provides an optional delay between readings to accommodate hardware or to avoid hogging
-the CPU in a threaded environment. It sets magbias to the mean values of x,y,z
 '''
 
 class Fusion(object):
@@ -22,23 +15,9 @@ class Fusion(object):
     '''
     declination = 0                         # Optional offset for true north. A +ve value adds to heading
     def __init__(self):
-        self.magbias = (0, 0, 0)            # local magnetic bias factors: set from calibration
-        self.start_time = None              # Time between updates
         self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta (see README)
-
-    def calibrate(self, getxyz, stopfunc, waitfunc = None):
-        magmax = list(getxyz())             # Initialise max and min lists with current values
-        magmin = magmax[:]
-        while not stopfunc():
-            if waitfunc is not None:
-                waitfunc()
-            magxyz = tuple(getxyz())
-            for x in range(3):
-                magmax[x] = max(magmax[x], magxyz[x])
-                magmin[x] = min(magmin[x], magxyz[x])
-        self.magbias = tuple(map(lambda a, b: (a +b)/2, magmin, magmax))
 
     @property
     def heading(self):
@@ -54,7 +33,7 @@ class Fusion(object):
         return degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
             self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
 
-    def update_nomag(self, accel, gyro, deltat):    # 3-tuples (x, y, z) for accel, gyro
+    def update_nomag(self, accel, gyro, time_dt):    # 3-tuples (x, y, z) for accel, gyro
         ax, ay, az = accel                  # Units G (but later normalised)
         gx, gy, gz = (radians(x) for x in gyro) # Units deg/s
         q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
@@ -101,14 +80,15 @@ class Fusion(object):
 
         # Integrate to yield quaternion
         
-        q1 += qDot1 * deltat
-        q2 += qDot2 * deltat
-        q3 += qDot3 * deltat
-        q4 += qDot4 * deltat
+        q1 += qDot1 * time_dt
+        q2 += qDot2 * time_dt
+        q3 += qDot3 * time_dt
+        q4 += qDot4 * time_dt
+
         norm = 1 / sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4)    # normalise quaternion
         self.q = q1 * norm, q2 * norm, q3 * norm, q4 * norm
 
-    def update(self, accel, gyro, mag, deltat):     # 3-tuples (x, y, z) for accel, gyro and mag data
+    def update(self, accel, gyro, mag, time_dt):     # 3-tuples (x, y, z) for accel, gyro and mag data
         mx, my, mz = (mag[x] - self.magbias[x] for x in range(3)) # Units irrelevant (normalised)
         ax, ay, az = accel                  # Units irrelevant (normalised)
         gx, gy, gz = (radians(x) for x in gyro)  # Units deg/s
@@ -192,9 +172,10 @@ class Fusion(object):
         qDot4 = 0.5 * (q1 * gz + q2 * gy - q3 * gx) - self.beta * s4
 
         # Integrate to yield quaternion
-        q1 += qDot1 * deltat
-        q2 += qDot2 * deltat
-        q3 += qDot3 * deltat
-        q4 += qDot4 * deltat
+        q1 += qDot1 * time_dt
+        q2 += qDot2 * time_dt
+        q3 += qDot3 * time_dt
+        q4 += qDot4 * time_dt
+        
         norm = 1 / sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4)    # normalise quaternion
         self.q = q1 * norm, q2 * norm, q3 * norm, q4 * norm
