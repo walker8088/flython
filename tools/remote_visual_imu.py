@@ -1,7 +1,7 @@
 # Origin from http://webbot.org.uk/iPoint/49.page
 # Jose Julio @2009
 # This script needs VPhyton modules
-
+import sys
 import string
 import math
 import time
@@ -9,6 +9,8 @@ import time
 import rpyc
 
 from visual import *
+
+from algorithm import *
 
 #IMU_HOST = '10.19.1.152'
 IMU_HOST = '192.168.0.108'
@@ -77,48 +79,24 @@ conn = rpyc.connect(IMU_HOST, 5678)
 raw_imu = conn.root
 raw_imu.init()
 
-filter = 0.1
-
-accel_x = 0.0
-accel_y = 0.0
-accel_z = 0.0
-
-roll = 0.0
-pitch = 0.0
-yaw = 0.0
-fuse = 0.9
+quad_fusion = QuadFusion()
+comp_fusion = CompFusion()
 
 while 1:
 	vals = raw_imu.update()
-	new_accel_x, new_accel_y, new_accel_z = vals[:3]
-        
-  
-	accel_x = new_accel_x * filter + accel_x * (1-filter)  
-	accel_y = new_accel_y * filter + accel_y * (1-filter)
-	accel_z = new_accel_z * filter + accel_z * (1-filter)
 	
-	time_dt = vals[9]
-	gyro_x = vals[3] * time_dt 
-	gyro_y = vals[4] * time_dt
-	gyro_z = vals[5] * time_dt
+	accel_xyz = vals[:3]
+	gyro_xyz = vals[3:6]
+	compass_xyz = vals[6:9]
+	time_dt = vals[10]
+	
+	pitch, roll, yaw = quad_fusion.update(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+	#pitch, roll, yaw = comp_fusion.update(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 
-	#accel_roll  = math.atan2(-accel_y, accel_z)
-	accel_roll  = math.atan(-accel_y/math.sqrt(accel_x * accel_x + accel_z * accel_z))
-    	accel_pitch = math.atan2(accel_x, math.sqrt(accel_y * accel_y + accel_z * accel_z))
-	accel_yaw = 0.0
-
-        roll = fuse * (roll + gyro_x) + (1-fuse) * accel_roll 
-        pitch = fuse * (pitch + gyro_y) + (1-fuse) * accel_pitch
-        yaw = fuse * (yaw + gyro_z) + (1-fuse) * accel_yaw
-
-        roll_degree = roll / grad2rad
-	pitch_degree = pitch / grad2rad
-	yaw_degree = yaw / grad2rad
-
-        axis=(cos(pitch)*cos(yaw),-cos(pitch)*sin(yaw),sin(pitch)) 
+    axis=(cos(pitch)*cos(yaw),-cos(pitch)*sin(yaw),sin(pitch)) 
 	up=(sin(roll)*sin(yaw)+cos(roll)*sin(pitch)*cos(yaw),sin(roll)*cos(yaw)-cos(roll)*sin(pitch)*sin(yaw),-cos(roll)*cos(pitch))
 	
-        platform.axis=axis
+    platform.axis=axis
 	platform.up=up
 	platform.length=1.0
 	platform.width=0.65
@@ -127,12 +105,13 @@ while 1:
 	plat_arrow.length=0.8
 	p_line.axis=axis
 	p_line.up=up
+
 	cil_roll.axis=(0.2*cos(roll),0.2*sin(roll),0)
 	cil_roll2.axis=(-0.2*cos(roll),-0.2*sin(roll),0)
 	cil_pitch.axis=(0.2*cos(pitch),0.2*sin(pitch),0)
 	cil_pitch2.axis=(-0.2*cos(pitch),-0.2*sin(pitch),0)
 	arrow_course.axis=(0.2*sin(yaw),0.2*cos(yaw),0)
 
-	L1.text = "%.1f" % (roll_degree)
-	L2.text = "%.1f" % (pitch_degree)
-	L3.text = "%.1f" % (yaw_degree)
+	L1.text = "%.1f" % (math.degrees(roll))
+	L2.text = "%.1f" % (math.degrees(pitch))
+	L3.text = "%.1f" % (math.degrees(yaw))

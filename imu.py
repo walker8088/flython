@@ -3,25 +3,23 @@ from algorithm import *
  
 class IMU(object):
     
-    def __init__(self, gyro_accel, compass, baro):
+    def __init__(self, gyro_accel, compass):
 
         self.gyro_accel = gyro_accel
         self.compass = compass
-        self.baro = baro
-
+        
         self.pitch = 0.0
         self.roll = 0.0
         self.yaw = 0.0
 
         self.quad_fusion = QuadFusion() 
-	self.dcm_fusion = DCMFusion()
+        self.dcm_fusion = DCMFusion()
     
     def init(self) :
         
         self.gyro_accel.init()
         self.compass.init()
-        self.baro.init()
-	    
+        
         self.last_time = time.time()
         self.time_dt = 0
         
@@ -33,22 +31,25 @@ class IMU(object):
         now = time.time()
         self.time_dt = now - self.last_time
         self.last_time = now 
-        
-	self.gyro_accel.read()
+	    
+        self.gyro_accel.read()
         self.compass.read()
-	
-	self.accel_xyz = self.gyro_accel.accel_xyz()
-	self.gyro_xyz = self.gyro_accel.gyro_xyz()
-	self.compass_xyz = self.compass.compass_xyz()
+
+        self.accel_xyz = self.gyro_accel.accel_xyz()
+        self.gyro_xyz = self.gyro_accel.gyro_xyz()
+        self.compass_xyz = self.compass.compass_xyz()
 	
     def update_quad(self):
+        
         self.quad_fusion.update(self.accel_xyz, self.gyro_xyz, self.compass_xyz, self.time_dt)
         return (self.quad_fusion.pitch, self.quad_fusion.roll, self.quad_fusion.heading)
 
     def update_dcm(self):
+        
         return self.dcm_fusion.update(self.accel_xyz, self.gyro_xyz, self.compass_xyz, self.time_dt)
 
     def set_compass_offsets(self,x_offset, y_offset, z_offset):
+        
         self.compass.set_offsets(x_offset, y_offset, z_offset)
 
 if __name__=='__main__':
@@ -62,7 +63,7 @@ if __name__=='__main__':
     compass = HMC5883L(i2c)
     baro = MS5611(i2c)
 
-    imu = IMU(gyro_accel, compass, baro)
+    imu = IMU(gyro_accel, compass)
     imu.init()
 
     start_time = time.time()
