@@ -5,8 +5,8 @@ import rpyc
 
 sys.path.append("..")
 
-#from bus import *
-#from sensors import *
+from bus import *
+from sensors import *
 
 class IMUSensorsService(rpyc.Service):
     
