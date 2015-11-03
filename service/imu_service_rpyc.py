@@ -7,6 +7,7 @@ sys.path.append("..")
 
 from bus import *
 from sensors import *
+from algorithm import *
 
 class IMUSensorsService(rpyc.Service):
     
@@ -27,6 +28,8 @@ class IMUSensorsService(rpyc.Service):
         self.mpu6050.init()
         self.hmc5883.init()
         self.last_time = time.time()
+        
+        self.quad_fusion = QuadFusion()
 
     def exposed_update(self):
         
@@ -40,6 +43,11 @@ class IMUSensorsService(rpyc.Service):
         return (self.mpu6050.accel_x, self.mpu6050.accel_y,self.mpu6050.accel_z,
                 self.mpu6050.gyro_x, self.mpu6050.gyro_y, self.mpu6050.gyro_z,
                 self.hmc5883.compass_x, self.hmc5883.compass_y, self.hmc5883.compass_z, time_dt ) 
+    
+    def exposed_update_quad():
+        self.exposed_update()
+        self.quad_fusion.update_imu(self.mpu6050.accel_xyz(), self.mpu6050.gyro_xyz(), self.hmc5883.compass_xyz(), self.time_dt)
+        return self.quad_fusion.q
 
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer

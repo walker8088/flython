@@ -16,6 +16,8 @@ import threading
 import socket
 import select
 
+import rpyc
+
 # Initial rotation
 x = 0.7325378163287418
 y = 0.4619397662556433
@@ -55,8 +57,10 @@ colors = [
 def Draw():
     global x, y, z, w
 
+    w, x, y, z = raw_imu.update_quad()
+    
     # --------------------- --- Parsing IMU data ------------------------------
-
+    '''
     while True:
         ready = select.select([socket_in_ahrs], [], [], 0.025)
         if ready[0]:
@@ -69,7 +73,7 @@ def Draw():
                 z = float(data[3])
         else:
             break
-
+    ''' 
     # ---------------- 3D transfomations and visualization --------------------
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -101,8 +105,12 @@ def Draw():
 
 #================================ Main ========================================
 
-socket_in_ahrs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-socket_in_ahrs.bind(("0.0.0.0", 7000))
+#socket_in_ahrs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#socket_in_ahrs.bind(("0.0.0.0", 7000))
+IMU_HOST = sys.argv[1]
+conn = rpyc.connect(IMU_HOST, 5678)
+raw_imu = conn.root
+raw_imu.init()
 
 glutInit(sys.argv)
 glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_MULTISAMPLE)

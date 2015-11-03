@@ -7,6 +7,25 @@ Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
 User should repeatedly call the appropriate 6 or 9 DOF update method and extract heading pitch and roll angles as
 required.
 '''
+'''
+comfirm from https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions#Euler_angles_.E2.86.94_quaternion
+'''
+'''
+https://github.com/kriswiner/MPU-9250/blob/master/MPU9250BasicAHRS.ino
+// Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
+// In this coordinate system, the positive z-axis is down toward Earth. 
+// Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, 
+//   looking down on the sensor positive yaw is counterclockwise.
+// Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
+// Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
+// These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
+// Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
+// applied in the correct order which for this configuration is yaw, pitch, and then roll.
+// For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
+    yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);   
+    pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
+    roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+'''
 
 class QuadFusion(object):
     '''
@@ -42,7 +61,7 @@ class QuadFusion(object):
 
     @property
     def yaw(self):
-        return -atan2( 2.0 * (self.q[0] * self.q[3] + self.q[1] * self.q[2]), 
+        return atan2( 2.0 * (self.q[0] * self.q[3] + self.q[1] * self.q[2]), 
                 1 - 2.0*(self.q[2] * self.q[2] + self.q[3] * self.q[3]))
         #return atan2(2.0 * (self.q[1] * self.q[2] + self.q[0] * self.q[3]),
         #    self.q[0] * self.q[0] + self.q[1] * self.q[1] - self.q[2] * self.q[2] - self.q[3] * self.q[3])
