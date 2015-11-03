@@ -22,14 +22,20 @@ class IMUSensorsService(rpyc.Service):
         pass
 
     def exposed_init(self):
+
         self.i2c = I2C(1)
+
         self.mpu6050 = MPU6050(self.i2c)
         self.hmc5883 = HMC5883L(self.i2c)
+
         self.mpu6050.init()
         self.hmc5883.init()
+
         self.last_time = time.time()
-        
-        self.quad_fusion = QuadFusion()
+
+    def exposed_init_quad(self) :    
+        self.exposed_init()
+	self.quad_fusion = QuadFusion()
 
     def exposed_update(self):
         
@@ -40,13 +46,13 @@ class IMUSensorsService(rpyc.Service):
         self.mpu6050.update()
         self.hmc5883.update()
 
-        return (self.mpu6050.accel_x, self.mpu6050.accel_y,self.mpu6050.accel_z,
-                self.mpu6050.gyro_x, self.mpu6050.gyro_y, self.mpu6050.gyro_z,
-                self.hmc5883.compass_x, self.hmc5883.compass_y, self.hmc5883.compass_z, time_dt ) 
+        return (self.mpu6050.accel_xyz(), self.mpu6050.gyro_xyz(), self.hmc5883.compass_xyz(), time_dt ) 
     
-    def exposed_update_quad():
-        self.exposed_update()
-        self.quad_fusion.update_imu(self.mpu6050.accel_xyz(), self.mpu6050.gyro_xyz(), self.hmc5883.compass_xyz(), self.time_dt)
+    def exposed_update_quad(self):
+        
+	accel_xyz, gyro_xyz, compass_xyz, time_dt = self.exposed_update()
+        self.quad_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+
         return self.quad_fusion.q
 
 if __name__ == "__main__":
