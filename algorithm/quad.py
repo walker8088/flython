@@ -1,5 +1,5 @@
 
-from math import sqrt, atan2, asin, degrees, radians
+import math
 
 '''
 Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DOF sensor.
@@ -12,19 +12,19 @@ comfirm from https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensio
 '''
 '''
 https://github.com/kriswiner/MPU-9250/blob/master/MPU9250BasicAHRS.ino
-// Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
-// In this coordinate system, the positive z-axis is down toward Earth. 
-// Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, 
-//   looking down on the sensor positive yaw is counterclockwise.
-// Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
-// Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
-// These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
-// Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
-// applied in the correct order which for this configuration is yaw, pitch, and then roll.
-// For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
-    yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);   
-    pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
-    roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+# Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
+# In this coordinate system, the positive z-axis is down toward Earth. 
+# Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, 
+#   looking down on the sensor positive yaw is counterclockwise.
+# Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
+# Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
+# These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
+# Tait-Bryan angles as well as Euler angles are non-commutative that is, the get the correct orientation the rotations must be
+# applied in the correct order which for this configuration is yaw, pitch, and then roll.
+# For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
+    yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3])   
+    pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]))
+    roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3])
 '''
 
 class QuadFusion(object):
@@ -32,8 +32,6 @@ class QuadFusion(object):
     Class provides sensor fusion allowing heading, pitch and roll to be extracted. This uses the Madgwick algorithm.
     The update method must be called peiodically. The calculations take 1.6mS on the Pyboard.
     '''
-    
-    declination = 0                         # Optional offset for true north. A +ve value adds to heading
     
     def __init__(self):
         self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
@@ -45,7 +43,7 @@ class QuadFusion(object):
         return (self.pitch, self.roll, self.yaw)
 	
     
-    #pitch(){ return -asin(2.0*q1*q3+2.0*q0*q2); }
+    #pitch(){ return -asin(2.0*q1*q3+2.0*q0*q2) }
     @property
     def pitch(self):
         return asin(2.0 * (self.q[0] * self.q[2] - self.q[1] * self.q[3]))
@@ -212,3 +210,199 @@ class QuadFusion(object):
         
         norm = 1 / sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4)    # normalise quaternion
         self.q = q1 * norm, q2 * norm, q3 * norm, q4 * norm
+
+class QuadFusion2(object):
+
+    def __init__(self):
+        self.q = (1, 0.0, 0.0, 0.0)
+        self.twoKi = 0
+        self.twoKp = 2
+        
+        self.integralFBx = 0.0
+        self.integralFBy = 0.0
+        self.integralFBz = 0.0
+
+    def update_imu(self, accel_xyz, gyro_xyz, mag_xyz, time_dt):
+
+        self.update(accel_xyz, gyro_xyz, mag_xyz, time_dt)
+        return self.euler()
+
+    def euler(self):
+
+        q0, q1, q2, q3 = (self.q[x] for x in range(4))  
+        roll = math.atan2(2 * (q0 * q1 + q2 * q3), 1-2*(q1*q1+q2*q2))
+        pitch = math.asin(2 * (q0 * q2-q3 * q1))
+        yaw = math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2*q2+q3*q3))
+        
+        return (pitch, roll, yaw)
+
+    def update(self, accel_xyz, gyro_xyz, mag_xyz, time_dt):
+
+        q0, q1, q2, q3 = (self.q[x] for x in range(4))  
+        ax, ay, az = accel_xyz
+        gx, gy, gz = gyro_xyz
+        mx, my, mz = mag_xyz
+
+        ## Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
+        #if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
+        #    updateIMU(gx, gy, gz, ax, ay, az, dt)
+        #    return
+        #}
+
+        
+        #Normalise accelerometer measurement
+        normal = 1.0 / math.sqrt(ax * ax + ay * ay + az * az)
+        ax *= normal
+        ay *= normal
+        az *= normal
+
+        #Normalise magnetometer measurement
+        normal = 1.0 / math.sqrt(mx * mx + my * my + mz * mz)
+        mx *= normal
+        my *= normal
+        mz *= normal
+
+        # Auxiliary variables to avoid repeated arithmetic
+        q0q0 = q0 * q0
+        q0q1 = q0 * q1
+        q0q2 = q0 * q2
+        q0q3 = q0 * q3
+        q1q1 = q1 * q1
+        q1q2 = q1 * q2
+        q1q3 = q1 * q3
+        q2q2 = q2 * q2
+        q2q3 = q2 * q3
+        q3q3 = q3 * q3
+
+        # Reference direction of Earth's magnetic field
+        hx = 2.0 * (mx * (0.5 - q2q2 - q3q3) + my * (q1q2 - q0q3) + mz * (q1q3 + q0q2))
+        hy = 2.0 * (mx * (q1q2 + q0q3) + my * (0.5 - q1q1 - q3q3) + mz * (q2q3 - q0q1))
+        bx = math.sqrt(hx * hx + hy * hy)
+        bz = 2.0 * (mx * (q1q3 - q0q2) + my * (q2q3 + q0q1) + mz * (0.5 - q1q1 - q2q2))
+
+        # Estimated direction of gravity and magnetic field
+        halfvx = q1q3 - q0q2
+        halfvy = q0q1 + q2q3
+        halfvz = q0q0 - 0.5 + q3q3
+        halfwx = bx * (0.5 - q2q2 - q3q3) + bz * (q1q3 - q0q2)
+        halfwy = bx * (q1q2 - q0q3) + bz * (q0q1 + q2q3)
+        halfwz = bx * (q0q2 + q1q3) + bz * (0.5 - q1q1 - q2q2)
+
+        # Error is sum of cross product between estimated direction and measured direction of field vectors
+        halfex = (ay * halfvz - az * halfvy) + (my * halfwz - mz * halfwy)
+        halfey = (az * halfvx - ax * halfvz) + (mz * halfwx - mx * halfwz)
+        halfez = (ax * halfvy - ay * halfvx) + (mx * halfwy - my * halfwx)
+
+        # Compute and apply integral feedback if enabled
+        if self.twoKi > 0.0 :
+            self.integralFBx += self.twoKi * halfex * time_dt # integral error scaled by Ki
+            self.integralFBy += self.twoKi * halfey * time_dt
+            self.integralFBz += self.twoKi * halfez * time_dt
+            gx += self.integralFBx  # apply integral feedback
+            gy += self.integralFBy
+            gz += self.integralFBz
+        else: 
+            self.integralFBx = 0.0 # prevent integral windup
+            self.integralFBy = 0.0
+            self.integralFBz = 0.0
+        
+        # Apply proportional feedback
+        gx += self.twoKp * halfex
+        gy += self.twoKp * halfey
+        gz += self.twoKp * halfez
+    
+
+        # Integrate rate of change of quaternion
+        gx *= 0.5 * time_dt      # pre-multiply common factors
+        gy *= 0.5 * time_dt
+        gz *= 0.5 * time_dt
+        qa = q0
+        qb = q1
+        qc = q2
+        q0 += -qb * gx - qc * gy - q3 * gz
+        q1 += qa * gx + qc * gz - q3 * gy
+        q2 += qa * gy - qb * gz + q3 * gx
+        q3 += qa * gz + qb * gy - qc * gx
+
+        # Normalise quaternion
+        normal = 1.0 / math.sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3)
+        q0 *= normal
+        q1 *= normal
+        q2 *= normal
+        q3 *= normal
+
+        self.q = (q0, q1, q2, q3)
+
+    
+'''
+    void updateIMU(float ax, float ay, float az, float gx, float gy, float gz, float dt)
+    {
+        float normal
+        float halfvx, halfvy, halfvz
+        float halfex, halfey, halfez
+        float qa, qb, qc
+
+        gx -= gyroOffset[0]
+        gy -= gyroOffset[1]
+        gz -= gyroOffset[2]
+
+        # Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+        if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
+
+            # Normalise accelerometer measurement
+            normal = invSqrt(ax * ax + ay * ay + az * az)
+            ax *= normal
+            ay *= normal
+            az *= normal
+
+            # Estimated direction of gravity and vector perpendicular to magnetic flux
+            halfvx = q1 * q3 - q0 * q2
+            halfvy = q0 * q1 + q2 * q3
+            halfvz = q0 * q0 - 0.5f + q3 * q3
+
+            # Error is sum of cross product between estimated and measured direction of gravity
+            halfex = (ay * halfvz - az * halfvy)
+            halfey = (az * halfvx - ax * halfvz)
+            halfez = (ax * halfvy - ay * halfvx)
+
+            # Compute and apply integral feedback if enabled
+            if(twoKi > 0.0f) {
+                integralFBx += twoKi * halfex * dt # integral error scaled by Ki
+                integralFBy += twoKi * halfey * dt
+                integralFBz += twoKi * halfez * dt
+                gx += integralFBx  # apply integral feedback
+                gy += integralFBy
+                gz += integralFBz
+            }
+            else {
+                integralFBx = 0.0f # prevent integral windup
+                integralFBy = 0.0f
+                integralFBz = 0.0f
+            }
+
+            # Apply proportional feedback
+            gx += twoKp * halfex
+            gy += twoKp * halfey
+            gz += twoKp * halfez
+        }
+
+        # Integrate rate of change of quaternion
+        gx *= (0.5f * dt)      # pre-multiply common factors
+        gy *= (0.5f * dt)
+        gz *= (0.5f * dt)
+        qa = q0
+        qb = q1
+        qc = q2
+        q0 += (-qb * gx - qc * gy - q3 * gz)
+        q1 += (qa * gx + qc * gz - q3 * gy)
+        q2 += (qa * gy - qb * gz + q3 * gx)
+        q3 += (qa * gz + qb * gy - qc * gx)
+
+        # Normalise quaternion
+        normal = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3)
+        q0 *= normal
+        q1 *= normal
+        q2 *= normal
+        q3 *= normal
+    }
+'''

@@ -33,9 +33,10 @@ class IMUSensorsService(rpyc.Service):
 
         self.last_time = time.time()
 
-    def exposed_init_quad(self) :    
+    def exposed_init_quad(self):
+        
         self.exposed_init()
-	self.quad_fusion = QuadFusion()
+        self.quad_fusion = QuadFusion()
 
     def exposed_update(self):
         
@@ -50,7 +51,7 @@ class IMUSensorsService(rpyc.Service):
     
     def exposed_update_quad(self):
         
-	accel_xyz, gyro_xyz, compass_xyz, time_dt = self.exposed_update()
+        accel_xyz, gyro_xyz, compass_xyz, time_dt = self.exposed_update()
         self.quad_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 
         return self.quad_fusion.q

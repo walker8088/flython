@@ -83,16 +83,12 @@ conn = rpyc.connect(IMU_HOST, 5678)
 raw_imu = conn.root
 raw_imu.init()
 
-quad_fusion = QuadFusion()
+quad_fusion = QuadFusion2()
 dcm_fusion = DCMFusion()
 
 while 1:
-	vals = raw_imu.update()
 	
-	accel_xyz = vals[:3]
-	gyro_xyz = vals[3:6]
-	compass_xyz = vals[6:9]
-	time_dt = vals[9]
+	accel_xyz, gyro_xyz, compass_xyz, time_dt = raw_imu.update()
 
 	pitch, roll, yaw = quad_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 	#pitch, roll, yaw = dcm_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)

@@ -59,21 +59,6 @@ def Draw():
 
     w, x, y, z = raw_imu.update_quad()
     
-    # --------------------- --- Parsing IMU data ------------------------------
-    '''
-    while True:
-        ready = select.select([socket_in_ahrs], [], [], 0.025)
-        if ready[0]:
-            data = socket_in_ahrs.recv(80).split()
-
-            if len(data) >= 4:
-                w = float(data[0])
-                x = float(data[1])
-                y = float(data[2])
-                z = float(data[3])
-        else:
-            break
-    ''' 
     # ---------------- 3D transfomations and visualization --------------------
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -110,7 +95,7 @@ def Draw():
 IMU_HOST = sys.argv[1]
 conn = rpyc.connect(IMU_HOST, 5678)
 raw_imu = conn.root
-raw_imu.init()
+raw_imu.init_quad()
 
 glutInit(sys.argv)
 glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_MULTISAMPLE)
