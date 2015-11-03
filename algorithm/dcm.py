@@ -6,12 +6,12 @@ import math
 class DCMFusion(object):
     
     def __init__(self):
-	self.pitch = 0.0
-	self.roll = 0.0		
-	self.yaw = 0.0
-	self.K = 0.98
+        self.pitch = 0.0
+        self.roll = 0.0		
+        self.yaw = 0.0
+        self.K = 0.95
 
-    def update(self, accel_xyz, gyro_xyz, compass_xyz, time_dt):
+    def update_imu(self, accel_xyz, gyro_xyz, compass_xyz, time_dt):
 
     	self.pitch += gyro_xyz[0] * time_dt 
     	self.roll += gyro_xyz[1] * time_dt
@@ -20,17 +20,17 @@ class DCMFusion(object):
     	#force = math.fabs(accel_xyz[0]) + math.fabs(accel_xyz[1])  + math.fabs(accel_xyz[2])
     	#print force
     	#if (force >= 0.5) and (force <= 2.5):
+        
     	roll_acc = math.atan2(accel_xyz[0], accel_xyz[2])
     	pitch_acc = math.atan2(accel_xyz[1], accel_xyz[2])
 
     	self.pitch = self.pitch * self.K + pitch_acc * (1 - self.K)
     	self.roll = self.roll * self.K  + roll_acc * (1 - self.K)
-	
-	self.yaw = self.compensated_bearing(self.pitch, self.roll, compass_xyz)  
+        self.yaw = self.compensated_yaw(self.pitch, self.roll, compass_xyz)  
 
     	return (self.pitch, self.roll, self.yaw) 
  
-    def compensated_bearing(self, pitch, roll, compass_xyz):
+    def compensated_yaw(self, pitch, roll, compass_xyz):
         '''
         Calculate a bearing taking in to account the current pitch and roll of the device as supplied as parameters
         '''
@@ -43,10 +43,10 @@ class DCMFusion(object):
         Xh = (compass_xyz[0] * cos_roll) + (compass_xyz[2] * sin_roll)
         Yh = (compass_xyz[0] * sin_pitch * sin_roll) + (compass_xyz[1] * cos_pitch) - (compass_xyz[2] * sin_pitch * cos_roll)
         
-        bearing = math.atan2(Yh, Xh)
+        yaw = math.atan2(Yh, Xh)
 
-        if bearing < 0:
-            return bearing + math.pi * 2
-        else:
-            return bearing
+        if yaw < 0:
+            yaw += math.pi * 2
+        
+        return yaw
 

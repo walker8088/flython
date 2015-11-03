@@ -1,6 +1,9 @@
+#!/usr/bin/python
+
 # Origin from http://webbot.org.uk/iPoint/49.page
 # Jose Julio @2009
 # This script needs VPhyton modules
+
 import sys
 import string
 import math
@@ -10,10 +13,11 @@ import rpyc
 
 from visual import *
 
+sys.path.append("..")
 from algorithm import *
 
-#IMU_HOST = '10.19.1.152'
-IMU_HOST = '192.168.0.108'
+IMU_HOST = '10.19.1.152'
+IMU_HOST = sys.argv[1]
 
 grad2rad = 3.141592/180.0
 
@@ -80,7 +84,7 @@ raw_imu = conn.root
 raw_imu.init()
 
 quad_fusion = QuadFusion()
-comp_fusion = CompFusion()
+dcm_fusion = DCMFusion()
 
 while 1:
 	vals = raw_imu.update()
@@ -88,15 +92,15 @@ while 1:
 	accel_xyz = vals[:3]
 	gyro_xyz = vals[3:6]
 	compass_xyz = vals[6:9]
-	time_dt = vals[10]
-	
-	pitch, roll, yaw = quad_fusion.update(accel_xyz, gyro_xyz, compass_xyz, time_dt)
-	#pitch, roll, yaw = comp_fusion.update(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+	time_dt = vals[9]
 
-    axis=(cos(pitch)*cos(yaw),-cos(pitch)*sin(yaw),sin(pitch)) 
+	pitch, roll, yaw = quad_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+	#pitch, roll, yaw = dcm_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+	
+	axis=(cos(pitch)*cos(yaw),-cos(pitch)*sin(yaw),sin(pitch)) 
 	up=(sin(roll)*sin(yaw)+cos(roll)*sin(pitch)*cos(yaw),sin(roll)*cos(yaw)-cos(roll)*sin(pitch)*sin(yaw),-cos(roll)*cos(pitch))
 	
-    platform.axis=axis
+	platform.axis=axis
 	platform.up=up
 	platform.length=1.0
 	platform.width=0.65
