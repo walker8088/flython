@@ -69,9 +69,9 @@ class MPU6050(object):
         self.gyro_y = 0
         self.gyro_z = 0
         
-	self.gyro_x_offset = 0
-	self.gyro_y_offset = 0
-	self.gyro_z_offset = 0
+        self.gyro_x_offset = 0
+        self.gyro_y_offset = 0
+        self.gyro_z_offset = 0
 
         self.raw_temp = 0
         self.temp = 0
@@ -129,22 +129,21 @@ class MPU6050(object):
         self.temp = self.raw_temp / 340 + 36.53
     
     def auto_gyro_offset(self, count) :
+        x_list = []
+        y_list = []
+        z_list = []
 
-	x_list = []
-	y_list = []
-	z_list = []
-
-	for i in range(count) :
-	    self.read()
-	    x_list.append(self.gyro_x)
-	    y_list.append(self.gyro_y)		    	
+        for i in range(count) :
+            self.read()
+            x_list.append(self.gyro_x)
+            y_list.append(self.gyro_y)		    	
             z_list.append(self.gyro_z)
 
-	self.gyro_x_offset = sum(x_list) / count
-	self.gyro_y_offset = sum(y_list) / count
-	self.gyro_z_offset = sum(z_list) / count
- 	
-	return (self.gyro_x_offset, self.gyro_y_offset, self.gyro_z_offset)
+        self.gyro_x_offset = sum(x_list) / count
+        self.gyro_y_offset = sum(y_list) / count
+        self.gyro_z_offset = sum(z_list) / count
+
+        return (self.gyro_x_offset, self.gyro_y_offset, self.gyro_z_offset)
 
     def update(self):
         self.read()

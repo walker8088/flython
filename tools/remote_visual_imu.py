@@ -19,7 +19,13 @@ from algorithm import *
 IMU_HOST = '10.19.1.152'
 IMU_HOST = sys.argv[1]
 
-grad2rad = 3.141592/180.0
+def euler(q0, q1, q2, q3):
+    roll = math.atan2(2 * (q0 * q1 + q2 * q3), 1-2*(q1*q1+q2*q2))
+    pitch = math.asin(2 * (q0 * q2-q3 * q1))
+    yaw = math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2*q2+q3*q3))
+    
+    return (pitch, roll, yaw)
+
 
 g_title = "Visual Accel"
 # Main scene
@@ -82,14 +88,16 @@ plat_arrow = arrow(color=color.green,axis=(1,0,0), shaftwidth=0.06, fixedwidth=1
 conn = rpyc.connect(IMU_HOST, 5678)
 raw_imu = conn.root
 raw_imu.init()
+#raw_imu.init_quat()
 
-quad_fusion = QuadFusion2()
+quat_fusion = QuaternionFusion()
 dcm_fusion = DCMFusion()
 
 while 1:
-	
+	#q0, q1, q2, q3 = raw_imu.update_quat()
+	#pitch, roll, yaw = euler(q0, q1, q2, q3)
 	accel_xyz, gyro_xyz, compass_xyz, time_dt = raw_imu.update()
-
+	print accel_xyz, gyro_xyz
 	pitch, roll, yaw = quad_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 	#pitch, roll, yaw = dcm_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 	
