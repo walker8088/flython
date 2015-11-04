@@ -19,14 +19,6 @@ from algorithm import *
 IMU_HOST = '10.19.1.152'
 IMU_HOST = sys.argv[1]
 
-def euler(q0, q1, q2, q3):
-    roll = math.atan2(2 * (q0 * q1 + q2 * q3), 1-2*(q1*q1+q2*q2))
-    pitch = math.asin(2 * (q0 * q2-q3 * q1))
-    yaw = math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2*q2+q3*q3))
-    
-    return (pitch, roll, yaw)
-
-
 g_title = "Visual Accel"
 # Main scene
 scene=display(title=g_title)
@@ -97,9 +89,9 @@ while 1:
 	#q0, q1, q2, q3 = raw_imu.update_quat()
 	#pitch, roll, yaw = euler(q0, q1, q2, q3)
 	accel_xyz, gyro_xyz, compass_xyz, time_dt = raw_imu.update()
-	print accel_xyz, gyro_xyz
-	pitch, roll, yaw = quad_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
-	#pitch, roll, yaw = dcm_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+	#print accel_xyz, gyro_xyz
+	#pitch, roll, yaw = quat_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+	pitch, roll, yaw = dcm_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 	
 	axis=(cos(pitch)*cos(yaw),-cos(pitch)*sin(yaw),sin(pitch)) 
 	up=(sin(roll)*sin(yaw)+cos(roll)*sin(pitch)*cos(yaw),sin(roll)*cos(yaw)-cos(roll)*sin(pitch)*sin(yaw),-cos(roll)*cos(pitch))

@@ -33,7 +33,7 @@ class IMUSensorsService(rpyc.Service):
 
         self.last_time = time.time()
 
-    def exposed_init_quad(self):
+    def exposed_init_quat(self):
         
         self.exposed_init()
         self.quat_fusion = QuaternionFusion()
@@ -54,7 +54,7 @@ class IMUSensorsService(rpyc.Service):
         accel_xyz, gyro_xyz, compass_xyz, time_dt = self.exposed_update()
         self.quat_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 
-        return self.quad_fusion.q
+        return self.quat_fusion.q
 
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer

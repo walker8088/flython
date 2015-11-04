@@ -1,11 +1,21 @@
 #!/usr/bin/python
 
+import sys
 import pygame
-import urllib
+import math
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
+
 from math import radians
 from pygame.locals import *
+
+
+import rpyc
+
+sys.path.append("..")
+
+from algorithm import *
 
 SCREEN_SIZE = (800, 600)
 SCALAR = .5
@@ -34,8 +44,6 @@ def init():
     glEnable(GL_LIGHT0)
     glLightfv(GL_LIGHT0, GL_AMBIENT, (0.3, 0.3, 0.3, 1.0));
 
-def read_values():
-    return (20,30)
 
 def run():
     pygame.init()
@@ -45,7 +53,16 @@ def run():
     clock = pygame.time.Clock()
     cube = Cube((0.0, 0.0, 0.0), (.5, .5, .7))
     angle = 0
-    
+
+    IMU_HOST = sys.argv[1]
+
+    conn = rpyc.connect(IMU_HOST, 5678)
+    raw_imu = conn.root
+    raw_imu.init()
+
+    #fusion = QuaternionFusion()
+    fusion = DCMFusion()
+
     while True:
         then = pygame.time.get_ticks()
         for event in pygame.event.get():
@@ -54,9 +71,11 @@ def run():
             if event.type == KEYUP and event.key == K_ESCAPE:
                 return
 
-        values = read_values()
-        x_angle = values[0]
-        y_angle = values[1]
+        accel_xyz, gyro_xyz, compass_xyz, time_dt = raw_imu.update()
+        pitch, roll, yaw = fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+
+        y_angle = math.degrees(pitch)
+        x_angle = math.degrees(roll)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -99,7 +118,7 @@ def run():
         glEnd()
         glPushMatrix()
         glRotate(float(x_angle), 1, 0, 0)
-        glRotate(-float(y_angle), 0, 0, 1)
+        glRotate(float(y_angle), 0, 0, 1)
         cube.render()
         glPopMatrix()
         pygame.display.flip()

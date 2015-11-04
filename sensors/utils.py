@@ -16,12 +16,12 @@ def bytes_to_int(msb, lsb):
     '''
     if not msb & 0x80:
         return msb << 8 | lsb  # +ve
-    return - (((msb ^ 255) << 8) | (lsb ^ 255) + 1)
+    return - (((msb ^ 255) << 8) | (lsb ^ 255) + 1))
 
 def get_x_rotation(x,y,z):
     radians = math.atan(x / math.sqrt(y * y + z * z)
     return math.degrees(radians)
 
 def get_y_rotation(x,y,z):
-    radians = math.atan(y / math.sqrt(x * x, z * z)
+    radians = math.atan(y / math.sqrt(x * x, z * z))
     return math.degrees(radians)

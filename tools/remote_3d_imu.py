@@ -7,16 +7,18 @@
 # Mac OS X. It listens for data on the UDP port 7000. To run it type:
 # python 3Dimu.py
 
+import os,sys
+import threading
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-import serial
-import os
-import threading
-import socket
-import select
 
 import rpyc
+
+sys.path.append("..")
+
+from algorithm import * 
 
 # Initial rotation
 x = 0.7325378163287418
@@ -55,9 +57,13 @@ colors = [
 # ================================ Main loop ==================================
 
 def Draw():
-    global x, y, z, w
+    
+    accel_xyz, gyro_xyz, compass_xyz, time_dt = raw_imu.update()
+    #print accel_xyz, gyro_xyz
+    
+    pitch, roll, yaw = quat_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 
-    w, x, y, z = raw_imu.update_quad()
+    w, x, y, z = quat_fusion.q
     
     # ---------------- 3D transfomations and visualization --------------------
 
@@ -93,9 +99,12 @@ def Draw():
 #socket_in_ahrs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 #socket_in_ahrs.bind(("0.0.0.0", 7000))
 IMU_HOST = sys.argv[1]
+
 conn = rpyc.connect(IMU_HOST, 5678)
 raw_imu = conn.root
-raw_imu.init_quat()
+raw_imu.init()
+
+quat_fusion = QuaternionFusion()
 
 glutInit(sys.argv)
 glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_MULTISAMPLE)

@@ -10,7 +10,7 @@ class QuaternionFusion(object):
     def __init__(self):
         self.q = (1, 0.0, 0.0, 0.0)
         self.twoKi = 0
-        self.twoKp = 2
+        self.twoKp = 5.0
         
         self.integralFBx = 0.0
         self.integralFBy = 0.0
@@ -18,22 +18,30 @@ class QuaternionFusion(object):
 
     def update_imu(self, accel_xyz, gyro_xyz, mag_xyz, time_dt):
 
-        self.update_no_mag(accel_xyz, gyro_xyz, time_dt)
-        #self.update(accel_xyz, gyro_xyz, mag_xyz, time_dt)
+        #self.update_no_mag(accel_xyz, gyro_xyz, time_dt)
+        self.update(accel_xyz, gyro_xyz, mag_xyz, time_dt)
         return self.euler()
 
     def euler(self):
 
-        q0, q1, q2, q3 = (self.q[x] for x in range(4))  
+        q0, q1, q2, q3 = self.q
+
         roll = math.atan2(2 * (q0 * q1 + q2 * q3), 1-2*(q1*q1+q2*q2))
-        pitch = math.asin(2 * (q0 * q2-q3 * q1))
-        yaw = math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2*q2+q3*q3))
+        pitch = -math.asin(2 * (q0 * q2-q3 * q1))
+        yaw = -math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2*q2+q3*q3))
+        
+        if roll < 0.0 : 
+            roll += math.pi * 2
+        if pitch < 0.0 :
+            pitch += math.pi * 2
+        if yaw < 0.0 :
+            yaw += math.pi * 2
         
         return (pitch, roll, yaw)
 
     def update(self, accel_xyz, gyro_xyz, mag_xyz, time_dt):
 
-        q0, q1, q2, q3 = (self.q[x] for x in range(4))  
+        q0, q1, q2, q3 = self.q  
         ax, ay, az = accel_xyz
         gx, gy, gz = gyro_xyz
         mx, my, mz = mag_xyz
@@ -131,7 +139,7 @@ class QuaternionFusion(object):
     
     def update_no_mag(self, accel_xyz, gyro_xyz, time_dt):
 
-        q0, q1, q2, q3 = (self.q[x] for x in range(4))  
+        q0, q1, q2, q3 = self.q
         ax, ay, az = accel_xyz
         gx, gy, gz = gyro_xyz
 
