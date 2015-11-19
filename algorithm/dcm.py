@@ -128,7 +128,7 @@ class DCMFusion(object):
         #renorm = Vector_Dot_Product(&temporary[0][0], &temporary[0][0]);
         renorm = Vector3.dot(temp0, temp0) 
         
-        if (renorm < 1.5625 && renorm > 0.64):
+        if (0.64 < renorm < 1.5625):
                 renorm = 0.5 * (3 - renorm)   #eq.21
         elif (0.01 < renorm < 100.0):
                 renorm = 1.0 / math.sqrt(renorm)
