@@ -1,1 +1,1 @@
-from i2c import I2C
+from i2c import *

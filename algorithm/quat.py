@@ -7,8 +7,12 @@ comfirm from https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensio
 
 class QuaternionFusion(object):
 
-    def __init__(self):
+    def __init__(self, mag_declination = 0):
+        
+        self.mag_declination = mag_declination
+        
         self.q = (1, 0.0, 0.0, 0.0)
+        
         self.twoKi = 0
         self.twoKp = 5.0
         
@@ -16,19 +20,21 @@ class QuaternionFusion(object):
         self.integralFBy = 0.0
         self.integralFBz = 0.0
 
-    def update_imu(self, accel_xyz, gyro_xyz, mag_xyz, time_dt):
+    def update(self, accel_xyz, gyro_xyz, mag_xyz, time_dt):
 
-        #self.update_no_mag(accel_xyz, gyro_xyz, time_dt)
-        self.update(accel_xyz, gyro_xyz, mag_xyz, time_dt)
-        return self.euler()
+        self.update9(accel_xyz, gyro_xyz, mag_xyz, time_dt)
+        
+        return self.euler_angles()
 
-    def euler(self):
+    def euler_angles(self):
 
         q0, q1, q2, q3 = self.q
 
         roll = math.atan2(2 * (q0 * q1 + q2 * q3), 1-2*(q1*q1+q2*q2))
         pitch = -math.asin(2 * (q0 * q2-q3 * q1))
         yaw = -math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2*q2+q3*q3))
+        
+        yaw += self.mag_declination
         
         if roll < 0.0 : 
             roll += math.pi * 2
@@ -37,9 +43,9 @@ class QuaternionFusion(object):
         if yaw < 0.0 :
             yaw += math.pi * 2
         
-        return (pitch, roll, yaw)
+        return (roll, pitch, yaw)
 
-    def update(self, accel_xyz, gyro_xyz, mag_xyz, time_dt):
+    def update9(self, accel_xyz, gyro_xyz, mag_xyz, time_dt):
 
         q0, q1, q2, q3 = self.q  
         ax, ay, az = accel_xyz
@@ -137,7 +143,7 @@ class QuaternionFusion(object):
         self.q = (q0, q1, q2, q3)
 
     
-    def update_no_mag(self, accel_xyz, gyro_xyz, time_dt):
+    def update6(self, accel_xyz, gyro_xyz, time_dt):
 
         q0, q1, q2, q3 = self.q
         ax, ay, az = accel_xyz

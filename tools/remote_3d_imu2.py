@@ -121,6 +121,7 @@ def run():
         glRotate(float(y_angle), 0, 0, 1)
         cube.render()
         glPopMatrix()
+        
         pygame.display.flip()
 
 class Cube(object):
