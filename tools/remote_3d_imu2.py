@@ -10,12 +10,11 @@ from OpenGL.GLU import *
 from math import radians
 from pygame.locals import *
 
-
 import rpyc
 
 sys.path.append("..")
 
-from algorithm import *
+from ahrs import *
 
 SCREEN_SIZE = (800, 600)
 SCALAR = .5
@@ -60,8 +59,8 @@ def run():
     raw_imu = conn.root
     raw_imu.init()
 
-    #fusion = QuaternionFusion()
-    fusion = DCMFusion()
+    fusion = QuaternionFusion()
+    #fusion = DCMFusion()
 
     while True:
         then = pygame.time.get_ticks()
@@ -72,7 +71,7 @@ def run():
                 return
 
         accel_xyz, gyro_xyz, compass_xyz, time_dt = raw_imu.update()
-        pitch, roll, yaw = fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+        roll, pitch, yaw = fusion.update(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 
         y_angle = math.degrees(pitch)
         x_angle = math.degrees(roll)

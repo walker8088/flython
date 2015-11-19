@@ -18,7 +18,7 @@ import rpyc
 
 sys.path.append("..")
 
-from algorithm import * 
+from ahrs import * 
 
 # Initial rotation
 x = 0.7325378163287418
@@ -61,7 +61,7 @@ def Draw():
     accel_xyz, gyro_xyz, compass_xyz, time_dt = raw_imu.update()
     #print accel_xyz, gyro_xyz
     
-    pitch, roll, yaw = quat_fusion.update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt)
+    roll, pitch, yaw = quat_fusion.update(accel_xyz, gyro_xyz, compass_xyz, time_dt)
 
     w, x, y, z = quat_fusion.q
     

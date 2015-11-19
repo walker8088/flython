@@ -30,9 +30,9 @@ class QuaternionFusion(object):
 
         q0, q1, q2, q3 = self.q
 
-        roll = math.atan2(2 * (q0 * q1 + q2 * q3), 1-2*(q1*q1+q2*q2))
-        pitch = -math.asin(2 * (q0 * q2-q3 * q1))
-        yaw = -math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2*q2+q3*q3))
+        roll = math.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2))
+        pitch = -math.asin(2 * (q0 * q2 - q3 * q1))
+        yaw = -math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3))
         
         yaw += self.mag_declination
         

@@ -1,9 +1,9 @@
 
-impprt sys
+import sys
 import math
 
 class AHRS(object):
-    def __init__(self, imu_fusion) :
+        def __init__(self, imu_fusion) :
 		
 		self.pitch = 0.0
 		self.roll  = 0.0
@@ -21,7 +21,7 @@ class AHRS(object):
 
 		self.imu_fusion = imu_fusion
 
-    def update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt):	
+        def update_imu(accel_xyz, gyro_xyz, compass_xyz, time_dt):	
 
 		self.accel_xyz = accel_xyz
 		self.gyro_xyz = gyro_xyz

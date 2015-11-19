@@ -7,7 +7,7 @@ sys.path.append("..")
 
 from bus import *
 from sensors import *
-from algorithm import *
+from ahrs import *
 
 class IMUSensorsService(rpyc.Service):
     
