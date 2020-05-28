@@ -13,8 +13,8 @@ class QuaternionFusion(object):
         
         self.q = (1, 0.0, 0.0, 0.0)
         
-        self.twoKi = 0
-        self.twoKp = 5.0
+        self.twoKi = 0.01
+        self.twoKp = 2.0
         
         self.integralFBx = 0.0
         self.integralFBy = 0.0

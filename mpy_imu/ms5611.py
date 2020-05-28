@@ -60,10 +60,10 @@ MS5611_RA_D2_OSR_2048   = 0x56
 MS5611_RA_D2_OSR_4096   = 0x58
 
 class MS5611 :
-	def __init__(self, i2c, address = 0x77):
+	def __init__(self, i2c, addr = 0x77):
 		
                 self.i2c = i2c
-		self.address = address
+		self.addr = addr
 		
                 self.C1 = 0
 		self.C2 = 0
@@ -80,15 +80,15 @@ class MS5611 :
 	def init(self):
 		## The MS6511 Sensor stores 6 values in the EPROM memory that we need in order to calculate the actual temperature and pressure
 		## These values are calculated/stored at the factory when the sensor is calibrated.
-		C1 = self.i2c.read_reg_block(self.address, MS5611_RA_C1) #Pressure Sensitivity
-		C2 = self.i2c.read_reg_block(self.address, MS5611_RA_C2) #Pressure Offset
-		C3 = self.i2c.read_reg_block(self.address, MS5611_RA_C3) #Temperature coefficient of pressure sensitivity
-		C4 = self.i2c.read_reg_block(self.address, MS5611_RA_C4) #Temperature coefficient of pressure offset
-		C5 = self.i2c.read_reg_block(self.address, MS5611_RA_C5) #Reference temperature
-		C6 = self.i2c.read_reg_block(self.address, MS5611_RA_C6) #Temperature coefficient of the temperature
+		C1 = self.i2c.read_mem_block(self.addr, MS5611_RA_C1, 2) #Pressure Sensitivity
+		C2 = self.i2c.read_mem_block(self.addr, MS5611_RA_C2, 2) #Pressure Offset
+		C3 = self.i2c.read_mem_block(self.addr, MS5611_RA_C3, 2) #Temperature coefficient of pressure sensitivity
+		C4 = self.i2c.read_mem_block(self.addr, MS5611_RA_C4, 2) #Temperature coefficient of pressure offset
+		C5 = self.i2c.read_mem_block(self.addr, MS5611_RA_C5, 2) #Reference temperature
+		C6 = self.i2c.read_mem_block(self.addr, MS5611_RA_C6, 2) #Temperature coefficient of the temperature
 
 		## Again here we are converting the 2 8bit packages into a single decimal
-        self.C1 = C1[0] * 256 + C1[1]
+		self.C1 = C1[0] * 256 + C1[1]
 		self.C2 = C2[0] * 256 + C2[1]
 		self.C3 = C3[0] * 256 + C3[1]
 		self.C4 = C4[0] * 256 + C4[1]
@@ -98,17 +98,17 @@ class MS5611 :
 		self.update()
 
 	def refreshPressure(self, OSR = MS5611_RA_D1_OSR_4096):
-		self.i2c.write_byte(self.address, OSR)
+		self.i2c.write_byte(self.addr, OSR)
 
 	def refreshTemperature(self, OSR = MS5611_RA_D2_OSR_4096):
-		self.i2c.write_byte(self.address, OSR)
+		self.i2c.write_byte(self.addr, OSR)
 
 	def readPressure(self):
-		D1 = self.i2c.read_reg_block(self.address, MS5611_RA_ADC)
+		D1 = self.i2c.read_mem_block(self.addr, MS5611_RA_ADC, 3)
 		self.D1 = D1[0] * 65536.0 + D1[1] * 256 + D1[2]
 
 	def readTemperature(self):
-		D2 = self.i2c.read_reg_block(self.address, MS5611_RA_ADC)
+		D2 = self.i2c.read_mem_block(self.addr, MS5611_RA_ADC, 3)
 		self.D2 = D2[0] * 65536.0 + D2[1] * 256 + D2[2]
 
 	def calculatePressureAndTemperature(self):
@@ -154,17 +154,10 @@ class MS5611 :
     	
 
 def pt2altitude(press, temp):
-        #return ((math.pow((101325.0 / press), 1/5.257) - 1.0) * (temp + 273.15)) / 0.0065
-	return 
+	return ((math.pow((101325.0 / press), 1/5.257) - 1.0) * (temp + 273.15)) / 0.0065
 
-if __name__=='__main__':
-    
-    import sys	
-    sys.path.append('..')
+def ms5611_test(i2c):
 
-    from bus import I2C
-
-    i2c = I2C(1)
     baro = MS5611(i2c)
     baro.init()
 
@@ -179,14 +172,14 @@ if __name__=='__main__':
     press_base = sum(presss)/len(presss) 
     temp_base = sum(temps)/len(temps)
     altitude_base = pt2altitude(press_base, temp_base)
-    print press_base, temp_base, altitude_base
+    print(press_base, temp_base, altitude_base)
 
     while(True):
         baro.update()
 
-        print "Temperature(C): %.6f" % (baro.temp), "Pressure(millibar): %.6f" % (baro.press)
+        print("Temperature(C): %.2f" % baro.temp, "Pressure(millibar): %.2f" % baro.press)
 	scaling = baro.press / press_base
         altitude_diff = 153.8462 * (temp_base + 273.15) * (1.0 - math.exp(0.190259 * math.log(scaling)))
-	print "%.3f" % altitude_diff
+	print("%.2f" % altitude_diff)
 
         time.sleep(0.1)
